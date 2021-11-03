@@ -2,16 +2,16 @@ clear
 name = 'leg';
 
 % Define variables for time, generalized coordinates + derivatives, controls, and parameters 
-syms t th1 th2 dth1 dth2 ddth1 ddth2 real
-syms m1 m2 m3 m4 I1 I2 I3 I4 l_O_m1 l_B_m2 l_A_m3 l_C_m4  g real
-syms l_OA l_OB l_AC l_DE real 
+syms t th1 th2 dth1 dth2 ddth1 ddth2 th3 dth3 ddth3 real
+syms m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 g real
+syms l_OA l_OB l_AC l_DE l_EF real 
 syms tau1 tau2 Fx Fy real
 syms Ir N real
 
 % Group them
-q   = [th1  ; th2 ];      % generalized coordinates
-dq  = [dth1 ; dth2];    % first time derivatives
-ddq = [ddth1;ddth2];  % second time derivatives
+q   = [th1  ; th2; th3 ];      % generalized coordinates
+dq  = [dth1 ; dth2; dth3];    % first time derivatives
+ddq = [ddth1;ddth2; ddth3];  % second time derivatives
 u   = [tau1 ; tau2];     % controls
 F   = [Fx ; Fy];
 
@@ -27,6 +27,7 @@ yhat = [0; 1; 0];
 khat = cross(ihat,jhat);
 e1hat =  cos(th1)*ihat + sin(th1)*jhat;
 e2hat =  cos(th1+th2)*ihat + sin(th1+th2)*jhat;
+e3hat = cos(th1+th2+th3)*ihat + sin(th1+th2+th3)*jhat;
 
 ddt = @(r) jacobian(r,[q;dq])*[dq;ddq]; % a handy anonymous function for taking time derivatives
 
@@ -36,22 +37,26 @@ rB = l_OB * e1hat;
 rC = rA  + l_AC * e2hat;
 rD = rB  + l_AC * e2hat;
 rE = rD  + l_DE * e1hat;
+rF = rE + l_EF * e3*hat;
 
 r_m1 = l_O_m1 * e1hat;
 r_m2 = rB + l_B_m2 * e2hat;
 r_m3 = rA + l_A_m3 * e2hat;
 r_m4 = rC + l_C_m4 * e1hat;
+r_m5 = rE + l_E_m5 * e3hat;
 
 drA = ddt(rA);
 drB = ddt(rB);
 drC = ddt(rC);
 drD = ddt(rD);
 drE = ddt(rE);
+drF = ddt(rF);
 
 dr_m1 = ddt(r_m1);
 dr_m2 = ddt(r_m2);
 dr_m3 = ddt(r_m3);
 dr_m4 = ddt(r_m4);
+dr_m5 = ddt(r_m5);
 
 % Calculate Kinetic Energy, Potential Energy, and Generalized Forces
 F2Q = @(F,r) simplify(jacobian(r,q)'*(F));    % force contributions to generalized forces
