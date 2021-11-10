@@ -12,11 +12,17 @@ function simulate_leg()
     Ir = 0.0035/N^2;
     g = 9.81;    
     
-    restitution_coeff = 0.;
+    m5 = 0.1;
+    l_E_m5 = 0.1;
+    l_EF   = 0.2;
+    I5     = 22.176 * 10^-6;
+    
+    
+    restitution_coeff = 0.01;
     friction_coeff = 0.3;
     ground_height = -0.13;
     %% Parameter vector
-    p   = [m1 m2 m3 m4 I1 I2 I3 I4 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_OA l_OB l_AC l_DE g]';
+    p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g]';
        
     %% Simulation Parameters Set 2 -- Operational Space Control
     p_traj.omega = 30;
@@ -29,8 +35,8 @@ function simulate_leg()
     tf = 5;
     num_step = floor(tf/dt);
     tspan = linspace(0, tf, num_step); 
-    z0 = [-pi/4; pi/2; 0; 0];
-    z_out = zeros(4,num_step);
+    z0 = [-pi/4; pi/2; pi/4; 0; 0; 0];
+    z_out = zeros(6,num_step);
     z_out(:,1) = z0;
     
     for i=1:num_step-1
@@ -149,8 +155,8 @@ function dz = dynamics(t,z,p,p_traj)
     dz = 0*z;
     
     % Form dz
-    dz(1:2) = z(3:4);
-    dz(3:4) = qdd;
+    dz(1:3) = z(4:6);
+    dz(4:6) = qdd;
 end
 
 function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
@@ -168,6 +174,7 @@ function animateSol(tspan, x,p)
     h_AC = plot([0],[0],'LineWidth',2);
     h_BD = plot([0],[0],'LineWidth',2);
     h_CE = plot([0],[0],'LineWidth',2);
+    h_EF = plot([0],[0],'LineWidth',2);
    
     
     xlabel('x'); ylabel('y');
@@ -191,6 +198,7 @@ function animateSol(tspan, x,p)
         rC = keypoints(:,3); % Vector to tip of pendulum
         rD = keypoints(:,4);
         rE = keypoints(:,5);
+        rF = keypoints(:,6);
 
         set(h_title,'String',  sprintf('t=%.2f',t) ); % update title
         
@@ -205,6 +213,9 @@ function animateSol(tspan, x,p)
         
         set(h_CE,'XData',[rC(1) rE(1)]);
         set(h_CE,'YData',[rC(2) rE(2)]);
+        
+        set(h_EF,'XData',[rE(1) rF(1)]);
+        set(h_EF,'YData',[rE(2) rF(2)]);
 
         pause(.01)
     end
