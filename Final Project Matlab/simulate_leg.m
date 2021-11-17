@@ -13,21 +13,23 @@ function simulate_leg()
     g = 9.81;    
     
     m5 = 0.1;
-    l_E_m5 = 0.1;
-    l_EF   = 0.2;
-    I5     = 22.176 * 10^-6;
+    l_E_m5 = 0.01;
+    l_EF   = 0.02;
+    I5     = 9.25 * 10^-6;
     
     
     restitution_coeff = 0.01;
     friction_coeff = 0.3;
-    ground_height = -0.13;
+    ground_height = -0.33; %-0.13;
     %% Parameter vector
     p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g]';
        
     %% Simulation Parameters Set 2 -- Operational Space Control
-    p_traj.omega = 30;
+    %p_traj.omega = 30;
+    p_traj.omega = 0;
     p_traj.x_0   = 0;
     p_traj.y_0   = -.125;
+    %p_traj.y_0   = 0;
     p_traj.r     = 0.025;
     
     %% Perform Dynamic simulation
@@ -35,7 +37,7 @@ function simulate_leg()
     tf = 5;
     num_step = floor(tf/dt);
     tspan = linspace(0, tf, num_step); 
-    z0 = [-pi/4; pi/2; pi/4; 0; 0; 0];
+    z0 = [-pi/4; pi/2; 0; 0; 0; 0];
     z_out = zeros(6,num_step);
     z_out(:,1) = z0;
     
@@ -115,28 +117,30 @@ function tau = control_law(t, z, p, p_traj)
 
     % Desired position of foot is a circle
     omega_swing = p_traj.omega;
-    rEd = [p_traj.x_0 p_traj.y_0 0]' + ...
+    rFd = [p_traj.x_0 p_traj.y_0 0]' + ...
             p_traj.r*[cos(omega_swing*t) sin(omega_swing*t) 0]';
     % Compute desired velocity of foot
-    vEd = p_traj.r*[-sin(omega_swing*t)*omega_swing    ...
+    vFd = p_traj.r*[-sin(omega_swing*t)*omega_swing    ...
                      cos(omega_swing*t)*omega_swing   0]';
     % Desired acceleration
-    aEd = p_traj.r*[-cos(omega_swing*t)*omega_swing^2 ...
+    aFd = p_traj.r*[-cos(omega_swing*t)*omega_swing^2 ...
                     -sin(omega_swing*t)*omega_swing^2 0]';
     
     % Actual position and velocity 
-    rE = position_foot(z,p);
-    vE = velocity_foot(z,p);
+    rF = position_foot(z,p);
+    vF = velocity_foot(z,p);
     
     % Compute virtual foce for Question 1.4 and 1.5
-    f  = [K_x * (rEd(1) - rE(1) ) + D_x * ( - vE(1) ) ;
-          K_y * (rEd(2) - rE(2) ) + D_y * ( - vE(2) ) ];
+    f  = [K_x * (rFd(1) - rF(1) ) + D_x * ( - vF(1) ) ;
+          K_y * (rFd(2) - rF(2) ) + D_y * ( - vF(2) ) ];
     
     %% Task-space compensation and feed forward for Question 1.8
 
     % Map to joint torques  
     J  = jacobian_foot(z,p);
-    tau = J' * f;
+    %tau = J' * f;
+    tau = [0;0];
+    
 end
 
 
@@ -144,12 +148,14 @@ function dz = dynamics(t,z,p,p_traj)
     % Get mass matrix
     A = A_leg(z,p);
     
+    disp(A);
     % Compute Controls
-    tau = control_law(t,z,p,p_traj);
+   %tau = control_law(t,z,p,p_traj);
+   tau = [0;0]; 
     
     % Get b = Q - V(q,qd) - G(q)
     b = b_leg(z,tau,p);
-    
+    disp(b);
     % Solve for qdd.
     qdd = A\(b);
     dz = 0*z;
