@@ -18,12 +18,12 @@ function simulate_leg()
     l_E_m5 = 0.01;
     l_EF   = 0.02;
     I5     = 9.25 * 10^-6;
-    kappa = 0.2;
-    th3_0 = 0;
+    kappa = 0.15;
+    th3_0 = -pi/12;
     
     restitution_coeff = 0.;
     friction_coeff = 10;
-    ground_height = -0.14;
+    ground_height = -0.12;
     %% Parameter vector
     p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';
        
@@ -188,12 +188,19 @@ end
 function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
    
     rE = position_foot(z, p);
+    rF = position_foot_rF(z,p);
     rE_dot = velocity_foot(z, p);
+    rF_dot = velocity_foot_rF(z,p);
+    
     qdot = z(4:6);
     C_y = rE(2)-yC;
     C_ydot = rE_dot(2);%Constraaint definition
+    
+    C_y_f = rF(2)-yC;
+    C_ydot_f= rF_dot(2);
+    
 
-    if(C_y<0 && C_ydot < 0) %enforcing constrait violation
+    if((C_y<0 && C_ydot < 0) || (C_y_f<0 && C_ydot_f<0)) %enforcing constrait violation
       J  = jacobian_foot(z,p);
       M_joint = A_leg(z,p);
       M_joint_inv = inv(M_joint); %Mass operationalspace

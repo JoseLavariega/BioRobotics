@@ -133,6 +133,9 @@ z  = [q ; dq];
 
 rE = rE(1:2); % to some degree we do want the ankle to be touching,no?
 drE= drE(1:2);
+rF = rF(1:2);
+drF= drF(1:2);
+
 J  = J(1:2,1:3)
 dJ = dJ(1:2,1:3);
 
@@ -141,6 +144,8 @@ matlabFunction(b,'file',['b_' name],'vars',{z u p});
 matlabFunction(E,'file',['energy_' name],'vars',{z p});
 matlabFunction(rE,'file',['position_foot'],'vars',{z p});
 matlabFunction(drE,'file',['velocity_foot'],'vars',{z p});
+matlabFunction(rF,'file',['position_foot_rF'],'vars',{z p});
+matlabFunction(drF,'file',['velocity_foot_rF'],'vars',{z p});
 matlabFunction(J ,'file',['jacobian_foot'],'vars',{z p});
 matlabFunction(dJ ,'file',['jacobian_dot_foot'],'vars',{z p});
 
