@@ -5,8 +5,8 @@ name = 'leg';
 syms t real
 syms th1 dth1 ddth1 real
 syms th2 dth2 ddth2 real
-syms th3 dth3 ddth3 real
-syms m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 g real
+syms th3 dth3 ddth3 th3_0 real
+syms m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 g kappa real
 syms l_OA l_OB l_AC l_DE l_EF real 
 syms tau1 tau2 tau3 Fx Fy real
 syms Ir N real
@@ -19,7 +19,7 @@ ddq = [ddth1;ddth2; ddth3];  % second time derivatives
 u   = [tau1 ; tau2; tau3];     % controls
 F   = [Fx ; Fy];
 
-p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g]';        % parameters
+p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';        % parameters
 
 % Generate Vectors and Derivativess
 ihat = [0; -1; 0];
@@ -88,9 +88,10 @@ Vg2 = m2*g*dot(r_m2, -ihat);
 Vg3 = m3*g*dot(r_m3, -ihat);
 Vg4 = m4*g*dot(r_m4, -ihat);
 Vg5 = m5*g*dot(r_m5, -ihat);
+Ve1 = 1/2*kappa*(th3-th3_0)^2;
 
 T = simplify(T1 + T2 + T3 + T4 + T5 + T1r + T2r + T3r);
-Vg = Vg1 + Vg2 + Vg3 + Vg4+Vg5;
+Vg = Vg1 + Vg2 + Vg3 + Vg4 + Vg5 + Ve1;
 Q_tau1 = M2Q(tau1*khat,omega1*khat);
 Q_tau2 = M2Q(tau2*khat,omega2*khat); 
 Q_tau2R= M2Q(-tau2*khat,omega1*khat);
@@ -130,7 +131,7 @@ dJ= reshape( ddt(J(:)) , size(J) );
 % Write Energy Function and Equations of Motion
 z  = [q ; dq];
 
-rE = rE(1:2);
+rE = rE(1:2); % to some degree we do want the ankle to be touching,no?
 drE= drE(1:2);
 J  = J(1:2,1:3)
 dJ = dJ(1:2,1:3);

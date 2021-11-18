@@ -10,22 +10,25 @@ function simulate_leg()
     l_A_m3=0.0622;          l_C_m4=0.0610;
     N = 18.75;
     Ir = 0.0035/N^2;
-    g = 9.81;   
+    g = 9.81;  
+    
     
     %New parameters
     m5 = 0.1;
     l_E_m5 = 0.01;
     l_EF   = 0.02;
     I5     = 9.25 * 10^-6;
+    kappa = 0.2;
+    th3_0 = 0;
     
     restitution_coeff = 0.;
     friction_coeff = 10;
-    ground_height = -0.125;
+    ground_height = -0.14;
     %% Parameter vector
-    p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g]';
+    p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';
        
     %% Simulation Parameters Set 2 -- Operational Space Control
-    p_traj.omega = 3;
+    p_traj.omega = -3;
     p_traj.x_0   = 0;
     p_traj.y_0   = -.125;
     p_traj.r     = 0.025;
@@ -35,7 +38,7 @@ function simulate_leg()
     tf = 10;
     num_step = floor(tf/dt);
     tspan = linspace(0, tf, num_step); 
-    z0 = [-pi/4; pi/2;0; 0; 0; 0];
+    z0 = [-pi/4; pi/2;th3_0; 0; 0; 0];
     z_out = zeros(6,num_step);
     z_out(:,1) = z0;
     
@@ -45,7 +48,7 @@ function simulate_leg()
         z_out(:,i+1) = z_out(:,i) + dz*dt;
         
         %z_out(4:6,i+1) = joint_limit_constraint(z_out(:,i+1),p);
-        %z_out(4:6,i+1) = discrete_impact_contact(z_out(:,i+1), p, restitution_coeff, friction_coeff, ground_height);
+        z_out(4:6,i+1) = discrete_impact_contact(z_out(:,i+1), p, restitution_coeff, friction_coeff, ground_height);
 
         % Position update
         z_out(1:3,i+1) = z_out(1:3,i) + z_out(4:6,i+1)*dt;
@@ -158,7 +161,7 @@ function tau = control_law(t, z, p, p_traj)
     %f(1:2) = lambda*(aEd(1:2) + f(1:2)) + rho;
     %f(1:2) = lambda*(f(1:2)) + mu + rho;    
     tau = J' * f;
-    tau = [0;0;0];
+    %tau = [0;0;0];
 end
 
 
@@ -186,7 +189,7 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
    
     rE = position_foot(z, p);
     rE_dot = velocity_foot(z, p);
-    qdot = z(3:4);
+    qdot = z(4:6);
     C_y = rE(2)-yC;
     C_ydot = rE_dot(2);%Constraaint definition
 
@@ -209,7 +212,7 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
       end
       qdot = qdot + M_joint_inv*J_x.'*F_x;
     z_test = z;
-    z_test(3:4) = qdot;
+    z_test(4:6) = qdot;
     rE_dot = velocity_foot(z_test, p);
     end
     
@@ -220,8 +223,8 @@ end
 function qdot = joint_limit_constraint(z,p)
     q1_min = -50 * pi/ 180; %constraint
     C = z(1) - q1_min; 
-    dC= z(3);
-    qdot = z(3:4);
+    dC= z(4);
+    qdot = z(4:6);
     
     J = [1 0];
     A = A_leg(z,p);
@@ -241,6 +244,7 @@ function animateSol(tspan, x,p)
     h_AC = plot([0],[0],'LineWidth',2);
     h_BD = plot([0],[0],'LineWidth',2);
     h_CE = plot([0],[0],'LineWidth',2);
+    h_EF = plot([0],[0],'LineWidth',2);
    
     
     xlabel('x'); ylabel('y');
@@ -264,6 +268,7 @@ function animateSol(tspan, x,p)
         rC = keypoints(:,3); % Vector to tip of pendulum
         rD = keypoints(:,4);
         rE = keypoints(:,5);
+        rF = keypoints(:,6);
 
         set(h_title,'String',  sprintf('t=%.2f',t) ); % update title
         
@@ -278,6 +283,9 @@ function animateSol(tspan, x,p)
         
         set(h_CE,'XData',[rC(1) rE(1)]);
         set(h_CE,'YData',[rC(2) rE(2)]);
+        
+        set(h_EF,'XData',[rE(1) rF(1)]);
+        set(h_EF,'YData',[rE(2) rF(2)]);
 
         pause(.01)
     end
