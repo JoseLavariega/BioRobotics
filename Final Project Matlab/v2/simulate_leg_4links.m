@@ -1,5 +1,7 @@
 function simulate_leg()
     %% Definte fixed paramters
+    setpath
+    m0 = 0.2;
     m1 =.0393 + .2;         m2 =.0368; 
     m3 = .00783;            m4 = .0155;
     I1 = 25.1 * 10^-6;      I2 = 53.5 * 10^-6;
@@ -25,7 +27,7 @@ function simulate_leg()
     friction_coeff = 10;
     ground_height = -0.12;
     %% Parameter vector
-    p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';
+    p   = [m0 m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';
        
     %% Simulation Parameters Set 2 -- Operational Space Control
     p_traj.omega = -3;
@@ -38,8 +40,8 @@ function simulate_leg()
     tf = 10;
     num_step = floor(tf/dt);
     tspan = linspace(0, tf, num_step); 
-    z0 = [-pi/4; pi/2;th3_0; 0; 0; 0];
-    z_out = zeros(6,num_step);
+    z0 = [-pi/4; pi/2;th3_0; 0; 1; 0; 0; 0; 0; 0];
+    z_out = zeros(10,num_step);
     z_out(:,1) = z0;
     
     for i=1:num_step-1
@@ -121,26 +123,27 @@ function tau = control_law(t, z, p, p_traj)
 
     % Desired position of foot is a circle
     omega_swing = p_traj.omega;
-    rEd = [p_traj.x_0 p_traj.y_0 0]' + ...
+    rFd = [p_traj.x_0 p_traj.y_0 0]' + ...
             p_traj.r*[cos(omega_swing*t) sin(omega_swing*t) 0]';
     % Compute desired velocity of foot
-    vEd = p_traj.r*[-sin(omega_swing*t)*omega_swing    ...
+    vFd = p_traj.r*[-sin(omega_swing*t)*omega_swing    ...
                      cos(omega_swing*t)*omega_swing   0]';
     % Desired acceleration
-    aEd = p_traj.r*[-cos(omega_swing*t)*omega_swing^2 ...
+    aFd = p_traj.r*[-cos(omega_swing*t)*omega_swing^2 ...
                     -sin(omega_swing*t)*omega_swing^2 0]';
     
     % Actual position and velocity 
-    rE = position_foot(z,p);
-    vE = velocity_foot(z,p);
+    z
+    rF = position_foot_rF(z,p);
+    vF = velocity_foot_rF(z,p);
     
     % Compute virtual foce for Question 1.4 and 1.5
-    f  = [K_x * (rEd(1) - rE(1) ) + D_x * ( - vE(1) ) ;
-          K_y * (rEd(2) - rE(2) ) + D_y * ( - vE(2) ) ];
+    f  = [K_x * (rFd(1) - rF(1) ) + D_x * ( - vF(1) ) ;
+          K_y * (rFd(2) - rF(2) ) + D_y * ( - vF(2) ) ];
     
     %% Task-space ompensation and feed forward for Question 1.8 <- Typo?
     % get the M,V,G matrices:
-    M_joint = A_leg(z,p);
+    M_joint = A_bounding_leg(z,p);
     V_joint = Corr_leg(z,p);
     G_joint = Grav_leg(z,p);
     
@@ -153,10 +156,15 @@ function tau = control_law(t, z, p, p_traj)
     
     % compute Lambda,mu, rho
     lambda = inv(J*inv_M_joint*J');
+%     lambda
+%     J_dot
+%     q_dot
+%     J
+%     inv_M_joint
     mu = lambda*J*inv_M_joint*V_joint - lambda*J_dot*q_dot;
     rho = lambda*J*inv_M_joint*G_joint;
     
-    f(1:2) = lambda*(aEd(1:2) + f(1:2)) + mu + rho; %use the resources at our disposal
+    f(1:2) = lambda*(aFd(1:2) + f(1:2)) + mu + rho; %use the resources at our disposal
     %f(1:2) = lambda*(aEd(1:2) + f(1:2)) + mu;
     %f(1:2) = lambda*(aEd(1:2) + f(1:2)) + rho;
     %f(1:2) = lambda*(f(1:2)) + mu + rho;    
@@ -167,7 +175,7 @@ end
 
 function dz = dynamics(t,z,p,p_traj)
     % Get mass matrix
-    A = A_leg(z,p);
+    A = A_bounding_leg(z,p);
     
     % Compute Controls
     tau = control_law(t,z,p,p_traj);
