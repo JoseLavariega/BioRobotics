@@ -6,6 +6,7 @@ syms t real
 syms th1 dth1 ddth1 real
 syms th2 dth2 ddth2 real
 syms th3 dth3 ddth3 th3_0 real
+syms x dx ddx y dy ddy x_0 y_0 f_x f_y real
 syms m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 g kappa real
 syms l_OA l_OB l_AC l_DE l_EF real 
 syms tau1 tau2 tau3 Fx Fy real
@@ -13,10 +14,10 @@ syms Ir N real
 
 
 % Group them
-q   = [th1  ; th2 ; th3 ];      % generalized coordinates
-dq  = [dth1 ; dth2 ; dth3];    % first time derivatives
-ddq = [ddth1;ddth2; ddth3];  % second time derivatives
-u   = [tau1 ; tau2; tau3];     % controls
+q   = [th1  ; th2 ; th3; x; y];      % generalized coordinates
+dq  = [dth1 ; dth2 ; dth3; dx; dy];    % first time derivatives
+ddq = [ddth1;ddth2; ddth3; ddx; ddy];  % second time derivatives
+u   = [tau1 ; tau2; tau3; f_x; f_y];     % controls
 F   = [Fx ; Fy];
 
 p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';        % parameters
@@ -35,15 +36,15 @@ e3hat =  cos(th1+th2+th3)*ihat + sin(th1+th2+th3)*jhat;
 
 ddt = @(r) jacobian(r,[q;dq])*[dq;ddq]; % a handy anonymous function for taking time derivatives
 
-
-rA = l_OA * e1hat;
-rB = l_OB * e1hat;
+rO = x*xhat + y*yhat;
+rA = x*xhat + y*yhat + l_OA * e1hat;
+rB = x*xhat + y*yhat + l_OB * e1hat;
 rC = rA  + l_AC * e2hat;
 rD = rB  + l_AC * e2hat;
 rE = rD  + l_DE * e1hat;
 rF = rE + l_EF * e3hat;
 
-r_m1 = l_O_m1 * e1hat;
+r_m1 = x*xhat + y*yhat + l_O_m1 * e1hat;
 r_m2 = rB + l_B_m2 * e2hat;
 r_m3 = rA + l_A_m3 * e2hat;
 r_m4 = rC + l_C_m4 * e1hat;
@@ -55,6 +56,7 @@ drC = ddt(rC);
 drD = ddt(rD);
 drE = ddt(rE);
 drF = ddt(rF);
+drO = ddt(rO);
 
 dr_m1 = ddt(r_m1);
 dr_m2 = ddt(r_m2);
@@ -102,7 +104,7 @@ Q_tau = Q_tau1+Q_tau2 + Q_tau2R;
 Q = Q_tau;
 
 % Assemble the array of cartesian coordinates of the key points
-keypoints = [rA(1:2) rB(1:2) rC(1:2) rD(1:2) rE(1:2) rF(1:2)];
+keypoints = [rA(1:2) rB(1:2) rC(1:2) rD(1:2) rE(1:2) rF(1:2) rO(1:2)];
 
 %% All the work is done!  Just turn the crank...
 % Derive Energy Function and Equations of Motion
@@ -131,21 +133,45 @@ dJ= reshape( ddt(J(:)) , size(J) );
 % Write Energy Function and Equations of Motion
 z  = [q ; dq];
 
+rA = rA(1:2);
+drA= drA(1:2);
+rB = rB(1:2);
+drB= drB(1:2);
+rC = rC(1:2);
+drC= drC(1:2);
+rD = rD(1:2);
+drD= drD(1:2);
 rE = rE(1:2); % to some degree we do want the ankle to be touching,no?
 drE= drE(1:2);
 rF = rF(1:2);
 drF= drF(1:2);
+rO = rO(1:2);
+drO= drO(1:2);
 
-J  = J(1:2,1:3)
-dJ = dJ(1:2,1:3);
+
+J  = J(1:2,1:5)
+dJ = dJ(1:2,1:5);
 
 matlabFunction(A,'file',['A_' name],'vars',{z p});
 matlabFunction(b,'file',['b_' name],'vars',{z u p});
 matlabFunction(E,'file',['energy_' name],'vars',{z p});
+
+matlabFunction(rA,'file',['position_rA'],'vars',{z p});
+matlabFunction(drA,'file',['velocity_rA'],'vars',{z p});
+matlabFunction(rB,'file',['position_rB'],'vars',{z p});
+matlabFunction(drB,'file',['velocity_rB'],'vars',{z p});
+matlabFunction(rC,'file',['position_rC'],'vars',{z p});
+matlabFunction(drC,'file',['velocity_rC'],'vars',{z p});
+matlabFunction(rD,'file',['position_rD'],'vars',{z p});
+matlabFunction(drD,'file',['velocity_rD'],'vars',{z p});
+
 matlabFunction(rE,'file',['position_foot'],'vars',{z p});
 matlabFunction(drE,'file',['velocity_foot'],'vars',{z p});
 matlabFunction(rF,'file',['position_foot_rF'],'vars',{z p});
 matlabFunction(drF,'file',['velocity_foot_rF'],'vars',{z p});
+matlabFunction(rO,'file',['position_rO'],'vars',{z p});
+matlabFunction(drO,'file',['velocity_rO'],'vars',{z p});
+
 matlabFunction(J ,'file',['jacobian_foot'],'vars',{z p});
 matlabFunction(dJ ,'file',['jacobian_dot_foot'],'vars',{z p});
 
