@@ -30,7 +30,7 @@ function simulate_leg_4links()
     th2_0 = pi/2;
     th3_0 = -pi/12;
     x_0   = 0;
-    y_0   = 0.4;
+    y_0   = 0;
     
     
     %% Parameter vector
@@ -180,8 +180,8 @@ function tau = control_law(t, z, p, p_traj)
     %f(1:2) = lambda*(aEd(1:2) + f(1:2)) + mu;
     %f(1:2) = lambda*(aEd(1:2) + f(1:2)) + rho;
     %f(1:2) = lambda*(f(1:2)) + mu + rho;    
-    %tau = J' * f;
-    tau = [0;0;0; 0;0];
+    tau = J' * f;
+    %tau = [0;0;0; 0;0];
 end
 
 
@@ -243,7 +243,7 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
     
     % E
     if((C_y<0 && C_ydot < 0)) %enforcing constrait violation
-      J  = jacobian_foot(z,p);
+      J  = jacobian_E(z,p);
       M_joint = A_leg(z,p);
       M_joint_inv = inv(M_joint); %Mass operationalspace
       
@@ -263,12 +263,13 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
       z_test = z;
       z_test(6:10) = qdot;
       rE_dot = velocity_foot(z_test, p);
+      
+    end
      
     
     
     % F
-    elseif( (C_y_f<0 && C_ydot_f<0)) %|| (C_y_A < 0 && C_ydot_A<0)) % ||...
-          %(C_y_B < 0 && C_ydot_B<0) || (C_y_C < 0 && C_ydot_C<0) || (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
+    if( (C_y_f<0 && C_ydot_f<0))%enforcing constrait violation on F (end)
       J  = jacobian_foot(z,p);
       M_joint = A_leg(z,p);
       M_joint_inv = inv(M_joint); %Mass operationalspace
@@ -290,13 +291,13 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
       z_test(6:10) = qdot;
       rF_dot = velocity_foot_rF(z_test, p);
       
-    %end
+    end
     
    
     % A
-    elseif( (C_y_A < 0 && C_ydot_A<0)) % ||...
+    if( (C_y_A < 0 && C_ydot_A<0)) % ||...
           %(C_y_B < 0 && C_ydot_B<0) || (C_y_C < 0 && C_ydot_C<0) || (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
-      J  = jacobian_foot(z,p);
+      J  = jacobian_A(z,p);
       M_joint = A_leg(z,p);
       M_joint_inv = inv(M_joint); %Mass operationalspace
       
@@ -320,77 +321,78 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
     
    
 %     %B
-%     elseif( (C_y_B < 0 && C_ydot_B<0) ) %|| (C_y_C < 0 && C_ydot_C<0) || (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
-%       J  = jacobian_foot(z,p);
-%       M_joint = A_leg(z,p);
-%       M_joint_inv = inv(M_joint); %Mass operationalspace
-%       
-%       J_x = J(1,:);
-%       J_y = J(2,:);
-%       lambda_y = inv(J_y*M_joint_inv*J_y.');
-%       F_y = lambda_y*(-rest_coeff*drB(2) - J_y*qdot);
-%       qdot = qdot + M_joint_inv*J_y.'*F_y;
-%       
-%       %For X:
-%       lambda_x = inv(J_x*M_joint_inv*J_x.');
-%       F_x = lambda_x * (0 - J_x * qdot);
-%       if( abs(F_x) > fric_coeff*F_y)
-%           F_x = sign(F_x)*F_y*fric_coeff; %% good insight for formulating this not my own.
-%       end
-%       qdot = qdot + M_joint_inv*J_x.'*F_x;
-%       z_test = z;
-%       z_test(6:10) = qdot;
-%       drB = velocity_foot(z_test, p);
+    if( (C_y_B < 0 && C_ydot_B<0) ) %|| (C_y_C < 0 && C_ydot_C<0) || (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
+      J  = jacobian_B(z,p);
+      M_joint = A_leg(z,p);
+      M_joint_inv = inv(M_joint); %Mass operationalspace
+      
+      J_x = J(1,:);
+      J_y = J(2,:);
+      lambda_y = inv(J_y*M_joint_inv*J_y.');
+      F_y = lambda_y*(-rest_coeff*drB(2) - J_y*qdot);
+      qdot = qdot + M_joint_inv*J_y.'*F_y;
+      
+      %For X:
+      lambda_x = inv(J_x*M_joint_inv*J_x.');
+      F_x = lambda_x * (0 - J_x * qdot);
+      if( abs(F_x) > fric_coeff*F_y)
+          F_x = sign(F_x)*F_y*fric_coeff; %% good insight for formulating this not my own.
+      end
+      qdot = qdot + M_joint_inv*J_x.'*F_x;
+      z_test = z;
+      z_test(6:10) = qdot;
+      drB = velocity_foot(z_test, p);
+    end
     
    
 %     %C
-%     elseif(  (C_y_C < 0 && C_ydot_C<0) )%|| (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
-%       J  = jacobian_foot(z,p);
-%       M_joint = A_leg(z,p);
-%       M_joint_inv = inv(M_joint); %Mass operationalspace
-%       
-%       J_x = J(1,:);
-%       J_y = J(2,:);
-%       lambda_y = inv(J_y*M_joint_inv*J_y.');
-%       F_y = lambda_y*(-rest_coeff*drC(2) - J_y*qdot);
-%       qdot = qdot + M_joint_inv*J_y.'*F_y;
-%       
-%       %For X:
-%       lambda_x = inv(J_x*M_joint_inv*J_x.');
-%       F_x = lambda_x * (0 - J_x * qdot);
-%       if( abs(F_x) > fric_coeff*F_y)
-%           F_x = sign(F_x)*F_y*fric_coeff; %% good insight for formulating this not my own.
-%       end
-%       qdot = qdot + M_joint_inv*J_x.'*F_x;
-%       z_test = z;
-%       z_test(6:10) = qdot;
-%       drC = velocity_foot(z_test, p);
-    
+    if(  (C_y_C < 0 && C_ydot_C<0) )%|| (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
+      J  = jacobian_C(z,p);
+      M_joint = A_leg(z,p);
+      M_joint_inv = inv(M_joint); %Mass operationalspace
+      
+      J_x = J(1,:);
+      J_y = J(2,:);
+      lambda_y = inv(J_y*M_joint_inv*J_y.');
+      F_y = lambda_y*(-rest_coeff*drC(2) - J_y*qdot);
+      qdot = qdot + M_joint_inv*J_y.'*F_y;
+      
+      %For X:
+      lambda_x = inv(J_x*M_joint_inv*J_x.');
+      F_x = lambda_x * (0 - J_x * qdot);
+      if( abs(F_x) > fric_coeff*F_y)
+          F_x = sign(F_x)*F_y*fric_coeff; %% good insight for formulating this not my own.
+      end
+      qdot = qdot + M_joint_inv*J_x.'*F_x;
+      z_test = z;
+      z_test(6:10) = qdot;
+      drC = velocity_foot(z_test, p);
+    end
    
     
-    %C
-%     elseif(   (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
-%       J  = jacobian_foot(z,p);
-%       M_joint = A_leg(z,p);
-%       M_joint_inv = inv(M_joint); %Mass operationalspace
-%       
-%       J_x = J(1,:);
-%       J_y = J(2,:);
-%       lambda_y = inv(J_y*M_joint_inv*J_y.');
-%       F_y = lambda_y*(-rest_coeff*drD(2) - J_y*qdot);
-%       qdot = qdot + M_joint_inv*J_y.'*F_y;
-%       
-%       %For X:
-%       lambda_x = inv(J_x*M_joint_inv*J_x.');
-%       F_x = lambda_x * (0 - J_x * qdot);
-%       if( abs(F_x) > fric_coeff*F_y)
-%           F_x = sign(F_x)*F_y*fric_coeff; %% good insight for formulating this not my own.
-%       end
-%       qdot = qdot + M_joint_inv*J_x.'*F_x;
-%       z_test = z;
-%       z_test(6:10) = qdot;
-%       drD = velocity_foot(z_test, p);
-%    end
+    %D
+    if(   (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
+      J  = jacobian_D(z,p);
+      M_joint = A_leg(z,p);
+      M_joint_inv = inv(M_joint); %Mass operationalspace
+      
+      J_x = J(1,:);
+      J_y = J(2,:);
+      lambda_y = inv(J_y*M_joint_inv*J_y.');
+      F_y = lambda_y*(-rest_coeff*drD(2) - J_y*qdot);
+      qdot = qdot + M_joint_inv*J_y.'*F_y;
+      
+      %For X:
+      lambda_x = inv(J_x*M_joint_inv*J_x.');
+      F_x = lambda_x * (0 - J_x * qdot);
+      if( abs(F_x) > fric_coeff*F_y)
+          F_x = sign(F_x)*F_y*fric_coeff; %% good insight for formulating this not my own.
+      end
+      qdot = qdot + M_joint_inv*J_x.'*F_x;
+      z_test = z;
+      z_test(6:10) = qdot;
+      drD = velocity_foot(z_test, p);
+   end
 %     
         
         

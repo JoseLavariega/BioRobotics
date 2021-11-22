@@ -124,11 +124,22 @@ Mass_Joint_Sp = A;
 Grav_Joint_Sp = simplify(jacobian(Vg, q)');
 Corr_Joint_Sp = simplify( eom + Q - Grav_Joint_Sp - A*ddq);
 
-% Compute foot jacobian
-J = jacobian(rF,q)
+% Compute all Jacobians
+
+J_a = jacobian(rA,q);
+J_b = jacobian(rB,q);
+J_c = jacobian(rC,q);
+J_d = jacobian(rD,q);
+J_e = jacobian(rE,q);
+J_f = jacobian(rF,q)
 
 % Compute ddt( J )
-dJ= reshape( ddt(J(:)) , size(J) );
+dJ_a= reshape( ddt(J_a(:)) , size(J_a) );
+dJ_b= reshape( ddt(J_b(:)) , size(J_b) );
+dJ_c= reshape( ddt(J_c(:)) , size(J_c) );
+dJ_d= reshape( ddt(J_d(:)) , size(J_d) );
+dJ_e= reshape( ddt(J_e(:)) , size(J_e) );
+dJ_f= reshape( ddt(J_f(:)) , size(J_f) );
 
 % Write Energy Function and Equations of Motion
 z  = [q ; dq];
@@ -148,14 +159,25 @@ drF= drF(1:2);
 rO = rO(1:2);
 drO= drO(1:2);
 
+J_a  = J_a(1:2,1:5);
+dJ_a = dJ_a(1:2,1:5);
+J_b  = J_b(1:2,1:5);
+dJ_b = dJ_b(1:2,1:5);
+J_c  = J_c(1:2,1:5);
+dJ_c = dJ_c(1:2,1:5);
+J_d  = J_d(1:2,1:5);
+dJ_d = dJ_d(1:2,1:5);
+J_e  = J_e(1:2,1:5);
+dJ_e = dJ_e(1:2,1:5);
+J_f  = J_f(1:2,1:5);
+dJ_f = dJ_f(1:2,1:5);
 
-J  = J(1:2,1:5)
-dJ = dJ(1:2,1:5);
-
+%Joint Mass Matrix and other usefuls
 matlabFunction(A,'file',['A_' name],'vars',{z p});
 matlabFunction(b,'file',['b_' name],'vars',{z u p});
 matlabFunction(E,'file',['energy_' name],'vars',{z p});
 
+% Position and velocity
 matlabFunction(rA,'file',['position_rA'],'vars',{z p});
 matlabFunction(drA,'file',['velocity_rA'],'vars',{z p});
 matlabFunction(rB,'file',['position_rB'],'vars',{z p});
@@ -164,7 +186,6 @@ matlabFunction(rC,'file',['position_rC'],'vars',{z p});
 matlabFunction(drC,'file',['velocity_rC'],'vars',{z p});
 matlabFunction(rD,'file',['position_rD'],'vars',{z p});
 matlabFunction(drD,'file',['velocity_rD'],'vars',{z p});
-
 matlabFunction(rE,'file',['position_foot'],'vars',{z p});
 matlabFunction(drE,'file',['velocity_foot'],'vars',{z p});
 matlabFunction(rF,'file',['position_foot_rF'],'vars',{z p});
@@ -172,9 +193,21 @@ matlabFunction(drF,'file',['velocity_foot_rF'],'vars',{z p});
 matlabFunction(rO,'file',['position_rO'],'vars',{z p});
 matlabFunction(drO,'file',['velocity_rO'],'vars',{z p});
 
-matlabFunction(J ,'file',['jacobian_foot'],'vars',{z p});
-matlabFunction(dJ ,'file',['jacobian_dot_foot'],'vars',{z p});
+%Jacobians for intermediate points
+matlabFunction(J_a ,'file',['jacobian_A'],'vars',{z p});
+matlabFunction(dJ_a ,'file',['jacobian_dot_A'],'vars',{z p});
+matlabFunction(J_b ,'file',['jacobian_B'],'vars',{z p});
+matlabFunction(dJ_b ,'file',['jacobian_dot_B'],'vars',{z p});
+matlabFunction(J_c ,'file',['jacobian_C'],'vars',{z p});
+matlabFunction(dJ_c ,'file',['jacobian_dot_C'],'vars',{z p});
+matlabFunction(J_d ,'file',['jacobian_D'],'vars',{z p});
+matlabFunction(dJ_d ,'file',['jacobian_dot_D'],'vars',{z p});
+matlabFunction(J_e ,'file',['jacobian_E'],'vars',{z p});
+matlabFunction(dJ_e ,'file',['jacobian_dot_E'],'vars',{z p});
+matlabFunction(J_f ,'file',['jacobian_foot'],'vars',{z p});
+matlabFunction(dJ_f ,'file',['jacobian_dot_foot'],'vars',{z p});
 
+% Joint Coriolis, Joint Gravitational
 matlabFunction(Grav_Joint_Sp ,'file', ['Grav_leg'] ,'vars',{z p});
 matlabFunction(Corr_Joint_Sp ,'file', ['Corr_leg']     ,'vars',{z p});
 matlabFunction(keypoints,'file',['keypoints_' name],'vars',{z p});
