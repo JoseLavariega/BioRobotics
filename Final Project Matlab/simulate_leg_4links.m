@@ -12,11 +12,11 @@ function simulate_leg_4links()
     l_A_m3=0.0622;          l_C_m4=0.0610;
     N = 18.75;
     Ir = 0.0035/N^2;
-    g = 9.81;  
+    g = 9.81;
     
     restitution_coeff = 0.;
     friction_coeff = 10;
-    ground_height = -0.12;
+    ground_height = 0;
     
     %New parameters for new linkage
     m5 = 0.1;
@@ -26,12 +26,16 @@ function simulate_leg_4links()
     kappa = 0.15;
     
     %Initial Conditions
-    th1_0 = -pi/4;
+    th1_0 = 0;
     th2_0 = pi/2;
-    th3_0 = -pi/12;
+    th3_0 = pi/12;
     x_0   = 0;
-    y_0   = 0;
-    
+    y_0   = find_y0(th1_0, th2_0, th3_0, l_OA, l_OB, l_AC, l_DE, l_EF)
+%  th1_0 = 0;
+%     th2_0 = 0;
+%     th3_0 = -pi/12;
+%     x_0   = 0;
+%     y_0   = 0.3;    
     
     %% Parameter vector
     p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';
@@ -39,12 +43,12 @@ function simulate_leg_4links()
     %% Simulation Parameters Set 2 -- Operational Space Control
     p_traj.omega = 0;
     p_traj.x_0   = 0;
-    p_traj.y_0   = -.125;
+    p_traj.y_0   = 10;
     p_traj.r     = 0.025;
     
     %% Perform Dynamic simulation
     dt = 0.001;
-    tf = 10;
+    tf = 1;
     num_step = floor(tf/dt);
     tspan = linspace(0, tf, num_step); 
     %z0 = [-pi/4; pi/2;th3_0; 0; 0; 0];
@@ -73,28 +77,27 @@ function simulate_leg_4links()
     figure(1); clf
     plot(tspan,E);xlabel('Time (s)'); ylabel('Energy (J)');
     
-    %% Compute foot position over time
-    rE = zeros(2,length(tspan));
-    vE = zeros(2,length(tspan));
+%     %% Compute foot position over time
+    rO = zeros(2,length(tspan));
+    vO = zeros(2,length(tspan));
     for i = 1:length(tspan)
-        rE(:,i) = position_foot(z_out(:,i),p);
-        vE(:,i) = velocity_foot(z_out(:,i),p);
+        rO(:,i) = position_rO(z_out(:,i),p);
+        vO(:,i) = velocity_rO(z_out(:,i),p);
     end
-    
+%     
     figure(2); clf;
-    plot(tspan,rE(1,:),'r','LineWidth',2)
+    plot(tspan,rO(1,:),'r','LineWidth',2)
     hold on
     plot(tspan,p_traj.x_0 + p_traj.r * cos(p_traj.omega*tspan) ,'r--');
-    plot(tspan,rE(2,:),'b','LineWidth',2)
+    plot(tspan,rO(2,:),'b','LineWidth',2)
     plot(tspan,p_traj.y_0 + p_traj.r * sin(p_traj.omega*tspan) ,'b--');
-    
-    
+        
     xlabel('Time (s)'); ylabel('Position (m)'); legend({'x','x_d','y','y_d'});
 
     figure(3); clf;
-    plot(tspan,vE(1,:),'r','LineWidth',2)
+    plot(tspan,vO(1,:),'r','LineWidth',2)
     hold on
-    plot(tspan,vE(2,:),'b','LineWidth',2)
+    plot(tspan,vO(2,:),'b','LineWidth',2)
     
     xlabel('Time (s)'); ylabel('Velocity (m)'); legend({'vel_x','vel_y'});
     
@@ -116,12 +119,12 @@ function simulate_leg_4links()
    
   
     % Target traj
-    TH = 0:.1:2*pi;
-    plot( p_traj.x_0 + p_traj.r * cos(TH), ...
-          p_traj.y_0 + p_traj.r * sin(TH),'k--'); 
-    
+%     TH = 0:.1:2*pi;
+%     plot( p_traj.x_0 + p_traj.r * cos(TH), ...
+%           p_traj.y_0 + p_traj.r * sin(TH),'k--'); 
+%     
     % Ground Q2.3
-    plot([-.2 .2],[ground_height ground_height],'k'); 
+    plot([-.2 2],[ground_height ground_height],'k'); 
     
     animateSol(tspan, z_out,p);
 end
@@ -134,49 +137,82 @@ function tau = control_law(t, z, p, p_traj)
     D_y = 10.;  % Damping Y
 
     % Desired position of foot is a circle
-    omega_swing = p_traj.omega;
-    rEd = [p_traj.x_0 p_traj.y_0 0]' + ...
-            p_traj.r*[cos(omega_swing*t) sin(omega_swing*t) 0]';
-    % Compute desired velocity of foot
-    vEd = p_traj.r*[-sin(omega_swing*t)*omega_swing    ...
-                     cos(omega_swing*t)*omega_swing   0]';
-    % Desired acceleration
-    aEd = p_traj.r*[-cos(omega_swing*t)*omega_swing^2 ...
-                    -sin(omega_swing*t)*omega_swing^2 0]';
+%     omega_swing = p_traj.omega;
+%     rEd = [p_traj.x_0 p_traj.y_0 0]' + ...
+%             p_traj.r*[cos(omega_swing*t) sin(omega_swing*t) 0]';
+%     % Compute desired velocity of foot
+%     vEd = p_traj.r*[-sin(omega_swing*t)*omega_swing    ...
+%                      cos(omega_swing*t)*omega_swing   0]';
+%     % Desired acceleration
+%     aEd = p_traj.r*[-cos(omega_swing*t)*omega_swing^2 ...
+%                     -sin(omega_swing*t)*omega_swing^2 0]';
     
     % Actual position and velocity 
-    z
-    rE = position_foot(z,p);
-    vE = velocity_foot(z,p);
+    z;
+    rF = position_foot(z,p);
+    vF = velocity_foot_rF(z,p);
+
+    th1d = -pi/4;
+    th2d = pi/4;
     
     % Compute virtual foce for Question 1.4 and 1.5
-    f  = [K_x * (rEd(1) - rE(1) ) + D_x * ( - vE(1) ) ;
-          K_y * (rEd(2) - rE(2) ) + D_y * ( - vE(2) ) ];
+    
+    %balance
+    f  = [K_x * (th1d - z(1) ) + D_x * ( - z(6) );
+          K_y * (th2d - z(2) ) + D_y * ( - z(7) )];
+      
+    %jump
+    f = [-50;-50];
+
+  max_length = 0.2;
+ 
+if (abs(z(5)) > max_length) %in flight
+%     'in flight'
+    th1d = -pi/4;
+    th2d = pi/4;
+    k = 5;
+    b = 0.5;
+    f  = [k * (th1d - z(1) ) + b * ( - z(6) );
+          k * (th2d - z(2) ) + b * ( - z(7) )];
+      
+%     f = [0;0];
+end
+
+% f = [0;0];
+
+%Stand up straight
+% rAd = [1; 0.075];
+% vAd = [0; 0];
+% rA = position_rA(z,p);
+% vA = velocity_rA(z,p);
+% 
+% f = [K_x * (rAd(1) - rA(1) ) + D_x * ( - vA(1) ) ;
+%      K_y * (rAd(2) - rA(2) ) + D_y * ( - vA(2) ) ];
     
     %% Task-space ompensation and feed forward for Question 1.8 <- Typo?
     % get the M,V,G matrices:
-    M_joint = A_leg(z,p); %A_bounding_leg
-    V_joint = Corr_leg(z,p);
-    G_joint = Grav_leg(z,p);
-    
-    inv_M_joint = inv(M_joint);
-    q_dot = z(6:10);
+%     M_joint = A_leg(z,p); %A_bounding_leg
+%     V_joint = Corr_leg(z,p);
+%     G_joint = Grav_leg(z,p);
+%     
+%     inv_M_joint = inv(M_joint);
+%     q_dot = z(6:10);
     
     % Map to joint torques  
     J  = jacobian_foot(z,p);
     J_dot = jacobian_dot_foot(z,p);
     
     % compute Lambda,mu, rho
-    lambda = inv(J*inv_M_joint*J');
-%     lambda
-%     J_dot
-%     q_dot
-%     J
-%     inv_M_joint
-    mu = lambda*J*inv_M_joint*V_joint - lambda*J_dot*q_dot;
-    rho = lambda*J*inv_M_joint*G_joint;
+%     lambda = inv(J*inv_M_joint*J');
+% %     lambda
+% %     J_dot
+% %     q_dot
+% %     J
+% %     inv_M_joint
+%     mu = lambda*J*inv_M_joint*V_joint - lambda*J_dot*q_dot;
+%     rho = lambda*J*inv_M_joint*G_joint;
     
-    f(1:2) = lambda*(aEd(1:2) + f(1:2)) + mu + rho; %use the resources at our disposal
+%     f(1:2) = lambda*(aEd(1:2) + f(1:2)) + mu + rho; %use the resources at our disposal
     %f(1:2) = lambda*(aEd(1:2) + f(1:2)) + mu;
     %f(1:2) = lambda*(aEd(1:2) + f(1:2)) + rho;
     %f(1:2) = lambda*(f(1:2)) + mu + rho;    
@@ -368,8 +404,6 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
       z_test(6:10) = qdot;
       drC = velocity_foot(z_test, p);
     end
-   
-    
     %D
     if(   (C_y_D < 0 && C_ydot_D<0) ) %enforcing constrait violation
       J  = jacobian_D(z,p);
@@ -392,13 +426,7 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
       z_test = z;
       z_test(6:10) = qdot;
       drD = velocity_foot(z_test, p);
-   end
-%     
-        
-        
-    
-    
-
+    end
 end
 
 function qdot = joint_limit_constraint(z,p)
@@ -432,7 +460,7 @@ function animateSol(tspan, x,p)
     h_title = title('t=0.0s');
     
     axis equal
-    axis([-.5 .5 -.5 .5]);
+    axis([-.5 2 -.5 .5]);
 
     %Step through and update animation
     for i = 1:length(tspan)
@@ -471,4 +499,25 @@ function animateSol(tspan, x,p)
 
         pause(.01)
     end
+end
+
+function y0 = find_y0(th1, th2, th3, l_OA, l_OB, l_AC, l_DE, l_EF)
+ihat = [0; -1; 0];
+jhat = [1; 0; 0];
+
+khat = cross(ihat,jhat);
+e1hat =  cos(th1)*ihat + sin(th1)*jhat;
+e2hat =  cos(th1+th2)*ihat + sin(th1+th2)*jhat;
+e3hat =  cos(th1+th2+th3)*ihat + sin(th1+th2+th3)*jhat;
+
+rO = 0;
+rA = rO + l_OA * e1hat;
+rB = rO + l_OB * e1hat;
+rC = rA  + l_AC * e2hat;
+rD = rB  + l_AC * e2hat;
+rE = rD  + l_DE * e1hat;
+rF = rE + l_EF * e3hat;
+
+y0 = -rF(2);
+
 end

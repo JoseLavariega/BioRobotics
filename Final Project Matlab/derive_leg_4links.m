@@ -131,7 +131,7 @@ J_b = jacobian(rB,q);
 J_c = jacobian(rC,q);
 J_d = jacobian(rD,q);
 J_e = jacobian(rE,q);
-J_f = jacobian(rF,q)
+J_f = jacobian(rF,q);
 
 % Compute ddt( J )
 dJ_a= reshape( ddt(J_a(:)) , size(J_a) );
