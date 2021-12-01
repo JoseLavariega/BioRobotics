@@ -28,15 +28,15 @@
 % const_point = [-0.16; -0.14]; %[x;y] or [q1,q2] constant coordinate (x,q1,q2 coordinates should be opposite sign due to direction motors are mounted)
 % pts_foot = repmat(const_point,1,8);
        
-pts_foot = [    0.1157    0.1157    0.1157    0.0888   -0.2033   -0.1974   -0.1974   -0.1974
-   -0.1487   -0.1487   -0.1487   -0.2819   -0.2714   -0.0097   -0.0097   -0.0097]; % YOUR BEZIER PTS HERE
+pts_foot = [   -0.0911   -0.0911   -0.0911   -0.0748   -0.0012   -0.0035   -0.0035   -0.0035
+   -0.1826   -0.1826   -0.1826   -0.0856   -0.1055   -0.2071   -0.2071   -0.2071]; % YOUR BEZIER PTS HERE
 %         
 % Initial leg angles for encoder resets (negative of q1,q2 in lab handout due to direction motors are mounted)
 angle1_init = 0;
 angle2_init = -pi/2; 
 
 % Total experiment time is buffer,trajectory,buffer
-traj_time         = 10;
+traj_time         = 1;
 pre_buffer_time   = 2; % this should be 0 for constant points, 2 for Bezier trajectories
 post_buffer_time  = 2;
 
