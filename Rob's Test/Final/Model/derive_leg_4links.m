@@ -172,43 +172,46 @@ dJ_e = dJ_e(1:2,1:5);
 J_f  = J_f(1:2,1:5);
 dJ_f = dJ_f(1:2,1:5);
 
+
+directory = '../AutoDerived/';
+
 %Joint Mass Matrix and other usefuls
-matlabFunction(A,'file',['A_' name],'vars',{z p});
-matlabFunction(b,'file',['b_' name],'vars',{z u p});
-matlabFunction(E,'file',['energy_' name],'vars',{z p});
+matlabFunction(A,'file',[directory 'A_' name],'vars',{z p});
+matlabFunction(b,'file',[directory 'b_' name],'vars',{z u p});
+matlabFunction(E,'file',[directory 'energy_' name],'vars',{z p});
 
 % Position and velocity
-matlabFunction(rA,'file',['position_rA'],'vars',{z p});
-matlabFunction(drA,'file',['velocity_rA'],'vars',{z p});
-matlabFunction(rB,'file',['position_rB'],'vars',{z p});
-matlabFunction(drB,'file',['velocity_rB'],'vars',{z p});
-matlabFunction(rC,'file',['position_rC'],'vars',{z p});
-matlabFunction(drC,'file',['velocity_rC'],'vars',{z p});
-matlabFunction(rD,'file',['position_rD'],'vars',{z p});
-matlabFunction(drD,'file',['velocity_rD'],'vars',{z p});
-matlabFunction(rE,'file',['position_foot'],'vars',{z p});
-matlabFunction(drE,'file',['velocity_foot'],'vars',{z p});
-matlabFunction(rF,'file',['position_foot_rF'],'vars',{z p});
-matlabFunction(drF,'file',['velocity_foot_rF'],'vars',{z p});
-matlabFunction(rO,'file',['position_rO'],'vars',{z p});
-matlabFunction(drO,'file',['velocity_rO'],'vars',{z p});
+matlabFunction(rA,'file',[directory 'position_rA'],'vars',{z p});
+matlabFunction(drA,'file',[directory 'velocity_rA'],'vars',{z p});
+matlabFunction(rB,'file',[directory 'position_rB'],'vars',{z p});
+matlabFunction(drB,'file',[directory 'velocity_rB'],'vars',{z p});
+matlabFunction(rC,'file',[directory 'position_rC'],'vars',{z p});
+matlabFunction(drC,'file',[directory 'velocity_rC'],'vars',{z p});
+matlabFunction(rD,'file',[directory 'position_rD'],'vars',{z p});
+matlabFunction(drD,'file',[directory 'velocity_rD'],'vars',{z p});
+matlabFunction(rE,'file',[directory 'position_foot'],'vars',{z p});
+matlabFunction(drE,'file',[directory 'velocity_foot'],'vars',{z p});
+matlabFunction(rF,'file',[directory 'position_foot_rF'],'vars',{z p});
+matlabFunction(drF,'file',[directory 'velocity_foot_rF'],'vars',{z p});
+matlabFunction(rO,'file',[directory 'position_rO'],'vars',{z p});
+matlabFunction(drO,'file',[directory 'velocity_rO'],'vars',{z p});
 
 %Jacobians for intermediate points
-matlabFunction(J_a ,'file',['jacobian_A'],'vars',{z p});
-matlabFunction(dJ_a ,'file',['jacobian_dot_A'],'vars',{z p});
-matlabFunction(J_b ,'file',['jacobian_B'],'vars',{z p});
-matlabFunction(dJ_b ,'file',['jacobian_dot_B'],'vars',{z p});
-matlabFunction(J_c ,'file',['jacobian_C'],'vars',{z p});
-matlabFunction(dJ_c ,'file',['jacobian_dot_C'],'vars',{z p});
-matlabFunction(J_d ,'file',['jacobian_D'],'vars',{z p});
-matlabFunction(dJ_d ,'file',['jacobian_dot_D'],'vars',{z p});
-matlabFunction(J_e ,'file',['jacobian_E'],'vars',{z p});
-matlabFunction(dJ_e ,'file',['jacobian_dot_E'],'vars',{z p});
-matlabFunction(J_f ,'file',['jacobian_foot'],'vars',{z p});
-matlabFunction(dJ_f ,'file',['jacobian_dot_foot'],'vars',{z p});
+matlabFunction(J_a ,'file',[directory 'jacobian_A'],'vars',{z p});
+matlabFunction(dJ_a ,'file',[directory 'jacobian_dot_A'],'vars',{z p});
+matlabFunction(J_b ,'file',[directory 'jacobian_B'],'vars',{z p});
+matlabFunction(dJ_b ,'file',[directory 'jacobian_dot_B'],'vars',{z p});
+matlabFunction(J_c ,'file',[directory 'jacobian_C'],'vars',{z p});
+matlabFunction(dJ_c ,'file',[directory 'jacobian_dot_C'],'vars',{z p});
+matlabFunction(J_d ,'file',[directory 'jacobian_D'],'vars',{z p});
+matlabFunction(dJ_d ,'file',[directory 'jacobian_dot_D'],'vars',{z p});
+matlabFunction(J_e ,'file',[directory 'jacobian_E'],'vars',{z p});
+matlabFunction(dJ_e ,'file',[directory 'jacobian_dot_E'],'vars',{z p});
+matlabFunction(J_f ,'file',[directory 'jacobian_foot'],'vars',{z p});
+matlabFunction(dJ_f ,'file',[directory 'jacobian_dot_foot'],'vars',{z p});
 
 % Joint Coriolis, Joint Gravitational
-matlabFunction(Grav_Joint_Sp ,'file', ['Grav_leg'] ,'vars',{z p});
-matlabFunction(Corr_Joint_Sp ,'file', ['Corr_leg']     ,'vars',{z p});
-matlabFunction(keypoints,'file',['keypoints_' name],'vars',{z p});
+matlabFunction(Grav_Joint_Sp ,'file', [directory 'Grav_leg'] ,'vars',{z p});
+matlabFunction(Corr_Joint_Sp ,'file', [directory 'Corr_leg']     ,'vars',{z p});
+matlabFunction(keypoints,'file',[directory 'keypoints_' name],'vars',{z p});
 
