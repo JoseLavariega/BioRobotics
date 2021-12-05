@@ -17,13 +17,23 @@ function simulate_leg_4links()
     restitution_coeff = 0.;
     friction_coeff = 0.5;
     ground_height = 0;
+    y_offset =0.26;
     
     %New parameters for new linkage
     m5 = 0.01283;
     l_E_m5 = 0.012;
     l_EF   = 0.066;
     I5     = 9 * 10^-6;
-    kappa = 0.0356;  % to be determined.
+    
+    global flying
+    flying = 0;
+    
+    % MODIFIED PARAMETERS 
+    kappa = [0.0365 0.5 0.75 0.2 0.9 0.8 1.0];         % to be determined. Amount of rubber bands
+    squat_th1 = [-pi/4 -pi/2];         % TBD. squat(starting) angle The index is the configuration to be used. 
+    squat_th2 = [5*pi/6 4*pi/6];        % TBD. Squat(starting) angle
+    jump_th1  = [-2*pi/3 -pi/3];       % TBD. Impulse Angle
+    jump_th2  = [pi/6 pi/6];           % TBD. Impulse Angle
     
     %Want to find,stiffness,angle that maximizes horizontal forward
     %distance traveled out of a single hop.
@@ -33,42 +43,55 @@ function simulate_leg_4links()
     th2_0 = pi/2;
     th3_0 = pi/6; % to be determined
     x_0   = 0;
-    y_0   = 0.26;
+    y_0   = find_y0(th1_0, th2_0, th3_0, l_OA, l_OB, l_AC, l_DE, l_EF) + y_offset;
+    %TODO: Print y_offset
     
     
-    %% Parameter vector
-    p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa th3_0]';
-    % add in  m0
+
     %% Simulation Parameters Set 2 -- Operational Space Control
     p_traj.omega = 0;
     p_traj.x_0   = 0;
-    p_traj.y_0   = -.12; %stand at 0,0
-    p_traj.r     = 0;
+    p_traj.y_0   = -.12; %stand at 0,0  %10
+    p_traj.r     = 0;                   %0.025
     
+    
+    current_index = 1;
+    distances_traveled = [0];
+    
+    for sel=1:length(kappa) %put here your independent variable
     %% Perform Dynamic simulation
-    dt = 0.001;
-    tf = 2;
-    num_step = floor(tf/dt);
-    tspan = linspace(0, tf, num_step); 
-    %z0 = [-pi/4; pi/2;th3_0; 0; 0; 0];
-    z0 = [th1_0; th2_0; th3_0; x_0; y_0; ...
-          0;0; 0;0;0];
+        %% Parameter vector
+        p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa(sel) th3_0]';
+        %In the line above, modify kappa to kappa(sel)as needed
     
-    % z0 = [-pi/4; pi/2;th3_0; 0; 1; 0; 0; 0; 0; 0];
-    z_out = zeros(10,num_step);
-    %z_out = zeros(6,num_step);
-    z_out(:,1) = z0;
     
-    for i=1:num_step-1
-        dz = dynamics(tspan(i), z_out(:,i), p, p_traj);
-        % Velocity update with dynamics
-        z_out(:,i+1) = z_out(:,i) + dz*dt;
-        
-        %z_out(4:6,i+1) = joint_limit_constraint(z_out(:,i+1),p);
-        z_out(6:10,i+1) = discrete_impact_contact(z_out(:,i+1), p, restitution_coeff, friction_coeff, ground_height);
+        dt = 0.001;
+        tf = 2;
+        num_step = floor(tf/dt);
+        tspan = linspace(0, tf, num_step);
 
-        % Position update
-        z_out(1:5,i+1) = z_out(1:5,i) + z_out(6:10,i+1)*dt;
+        z0 = [th1_0; th2_0; th3_0; x_0; y_0; ...
+            0;        0;      0;  0;   0];
+
+        z_out = zeros(10,num_step);
+        z_out(:,1) = z0;
+
+        for i=1:num_step-1
+            dz = dynamics(tspan(i), z_out(:,i), p, p_traj, squat_th1(1), squat_th2(1),jump_th1(1),jump_th2(1)); 
+            %cCHANGETHE PARAMETERS ABOVE AS NEEDED
+            
+            % Velocity update with dynamics
+            z_out(:,i+1) = z_out(:,i) + dz*dt;
+
+            z_out(6:10,i+1) = joint_limit_constraint(z_out(:,i+1),p);
+            z_out(6:10,i+1) = discrete_impact_contact(z_out(:,i+1), p, restitution_coeff, friction_coeff, ground_height);
+
+            % Position update
+            z_out(1:5,i+1) = z_out(1:5,i) + z_out(6:10,i+1)*dt;
+        end
+        z_out(1:10, end)
+        distances_traveled(sel) = z_out(4,end);
+    
     end
     
     %% Compute Energy
@@ -135,6 +158,14 @@ function simulate_leg_4links()
     plot([-.2 .2],[ground_height ground_height],'k'); 
     
     animateSol(tspan, z_out,p);
+    %%
+    
+    % Independent Variable Code
+    figure(8); clf;
+    hold on
+    scatter(kappa, distances_traveled); %change to values iterated on
+    xlabel('Independent Variable (kappa, thetas_bend, or thetas_launch');
+    ylabel('Horizontal Distance Traveled (Origin)')
 end
 
 % function tau = control_law(t,z,p,p_traj)
@@ -143,54 +174,61 @@ end
 % end
 
 
-function tau = control_law(t, z, p, p_traj)
+function tau = control_law(t, z, squat_th1, squat_th2,jump_th1,jump_th2)
     % Controller gains, Update as necessary for Problem 1
-    K_x = 15.; % Spring stiffness X
-    K_y = 10.; % Spring stiffness Y
-    D_x = 3.5;  % Damping X
-    D_y = 2.;  % Damping Y
+    K_1 = 15.; % Spring stiffness X
+    K_2 = 10.; % Spring stiffness Y
+    D_1 = 3.5;  % Damping X
+    D_2 = 2.;  % Damping Y
 
+    t_start = 0.5;
+    t_jump  = 1.0;
+    t_land  = 2.0;
+    
+    max_length = 0.3;
+    global flying;
+    
     % Desired position of foot is a circle
-    omega_swing = p_traj.omega;
+%     omega_swing = p_traj.omega;
 %     rEd = [p_traj.x_0 p_traj.y_0 0]' + ...
 %             p_traj.r*[cos(omega_swing*t) sin(omega_swing*t) 0]';
-    rEd = [p_traj.x_0 p_traj.y_0 0]';
+%     rEd = [p_traj.x_0 p_traj.y_0 0]';
     % Compute desired velocity of foot
 %     vEd = p_traj.r*[-sin(omega_swing*t)*omega_swing    ...
 %                      cos(omega_swing*t)*omega_swing   0]';
 
-    vEd = [0 0 0]';
-    aEd = [0 0 0]';
+%     vEd = [0 0 0]';
+%     aEd = [0 0 0]';
     % Desired acceleration
 %      aEd = p_traj.r*[-cos(omega_swing*t)*omega_swing^2 ...
 %                      -sin(omega_swing*t)*omega_swing^2 0]';
     
     % Actual position and velocity 
     %z
-    rE = position_foot(z,p);
-     vE = velocity_foot(z,p);
+%     rE = position_foot(z,p);
+%      vE = velocity_foot(z,p);
     
     % Compute virtual foce for Question 1.4 and 1.5
 %     f  = [K_x * (rEd(1) - rE(1) ) + D_x * ( - vE(1) ) ;
 %           K_y * (rEd(2) - rE(2) ) + D_y * ( - vE(2) )]; 
 %           
-    th1_d = 0;
-    th2_d = 7*pi/8;
+%     th1_d = 0;
+%     th2_d = 7*pi/8;
 %     f = [K_x*(th1_d- z(1)) + D_x*(-z(6)); 
 %         K_y*(th2_d-z(2)) + D_y*(-z(7))];
     
 %     %% Task-space ompensation and feed forward for Question 1.8 <- Typo?
 %     % get the M,V,G matrices:
-    M_joint = A_leg(z,p); %A_bounding_leg
-    V_joint = Corr_leg(z,p);
-    G_joint = Grav_leg(z,p);
+%     M_joint = A_leg(z,p); %A_bounding_leg
+%     V_joint = Corr_leg(z,p);
+%     G_joint = Grav_leg(z,p);
 %     
 %     inv_M_joint = inv(M_joint);
-    q_dot = z(6:10);
-%     
-%     % Map to joint torques  
-    J  = jacobian_foot(z,p);
-    J_dot = jacobian_dot_foot(z,p);
+%     q_dot = z(6:10);
+% %     
+% %     % Map to joint torques  
+%     J  = jacobian_foot(z,p);
+%     J_dot = jacobian_dot_foot(z,p);
     
 %     % compute Lambda,mu, rho
 %     lambda = inv(J*inv_M_joint*J');
@@ -208,8 +246,61 @@ function tau = control_law(t, z, p, p_traj)
 %     %f(1:2) = lambda*(f(1:2)) + mu + rho;    
 %     tau = J' * f;
 %     tau = [0;0;0; 0;0];
-    tau = [K_x*(th1_d- z(1)) + D_x*(-z(6)); 
-        K_y*(th2_d-z(2)) + D_y*(-z(7)); 0;0;0];
+
+
+    if(z(5) > max_length && t > t_jump) %in the air
+            t_land = t;
+            flying = 1;
+    end
+    
+    if(z(5) <= max_length && t > t_jump && flying == 1) %landing
+            'setting condtions to land';
+            t_land = t;
+            flying = 2;
+    end
+    
+    
+    if (t <= t_start) %fall to ground
+        th1_d = -pi/6;
+        th2_d = pi/4;   
+    elseif(t > t_start && t < t_jump) %squat to jump pos
+        th1_d = squat_th1;
+        th2_d = squat_th2;
+    elseif(t >= t_jump && flying == 0) %jump
+        'jumping';
+        K_1 = 20;
+        K_2 = 20;
+        D_1 = 0.75;
+        D_2 = 0.75;
+        
+        th1_d = jump_th1;
+        th2_d = jump_th2;
+        
+        %beyond this point this is only a landing controller, no
+        %longe relevant. 
+    elseif(flying == 1) %flying
+        "in flight";
+        K_1 = 12.5;
+        K_2 = 12.5;
+        D_1 = 1;
+        D_2 = 1;
+        
+        th1_d = pi/3;
+        th2_d = pi/6;
+    elseif(flying == 2)
+        "trying to land";
+        K_1 = 12.5;
+        K_2 = 12.5;
+        D_1 = 1;
+        D_2 = 1;
+        
+        th1_d = 0;
+        th2_d = pi/4;
+    end
+    
+    % Controller
+    tau = [K_1*(th1_d- z(1)) + D_1*(-z(6)); 
+        K_2*(th2_d-z(2)) + D_2*(-z(7)); 0;0;0];
     
     
     
@@ -217,12 +308,12 @@ function tau = control_law(t, z, p, p_traj)
 end
 
 
-function dz = dynamics(t,z,p,p_traj)
+function dz = dynamics(t,z,p,p_traj,squat_th1,squat_th2, jump_th1,jump_th2)
     % Get mass matrix
     A = A_leg(z,p); %bounding_leg
     
     % Compute Controls
-    tau = control_law(t,z,p,p_traj);
+    tau = control_law(t,z,squat_th1, squat_th2,jump_th1,jump_th2);
     
     % Get b = Q - V(q,qd) - G(q)
     b = b_leg(z,tau,p);
@@ -236,6 +327,9 @@ function dz = dynamics(t,z,p,p_traj)
     dz(6:10) = qdd;
     %disp(qdd);
 end
+
+
+%%  Constraint Functions
 
 function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
    
@@ -434,18 +528,69 @@ function qdot = discrete_impact_contact(z,p, rest_coeff, fric_coeff, yC)
 end
 
 function qdot = joint_limit_constraint(z,p)
-    q1_min = -50 * pi/ 180; %constraint
-    C = z(1) - q1_min; 
-    dC= z(6);
-    qdot = z(6:19);
+   %th1
+    th1_min = -3*pi/4; %constraint
+    th1_max = 3*pi/4;
+    C1_min = z(1) - th1_min; 
+    C1_max = th1_max - z(1);
+    dC1 = z(6);
+    qdot = z(6:10);
     
-    J = [1 0];
+    J = [1 0 0 0 0];
     A = A_leg(z,p);
 
-    if (C < 0 && dC <0)% if constraint is violated
+    if (C1_min < 0 && dC1 <0)% if constraint is violated
+        test_print = "min angle violated"
         lambda = A(2,2); %insightgotten from a ta
-        F_c = lambda * (0 - dC);
+        F_c = lambda * (0 - dC1);
+        inv(A);
         qdot = qdot + inv(A)*J.'*F_c;        % generalformulation of constraint
+    elseif (C1_max < 0 && dC1 > 0)% if constraint is violated
+        lambda = A(2,2); %insightgotten from a ta
+        F_c = lambda * (dC1);
+        qdot = qdot + inv(A)*J.'*F_c;
+    end
+    
+    %th2
+    J = [0 1 0 0 0];
+    
+    th2_min = pi/6; %constraint
+    th2_max = 5*pi/6;
+    C2_min = z(2) - th2_min; 
+    C2_max = th2_max - z(2);
+    dC2 = z(7);
+    
+    qdot = z(6:10);
+    
+     if (C2_min < 0 && dC2 <0)% if constraint is violated
+        lambda = A(2,2); %insightgotten from a ta
+        F_c = lambda * (0 - dC2);
+        qdot = qdot + inv(A)*J.'*F_c;        % generalformulation of constraint
+    elseif (C2_max < 0 && dC2 > 0)% if constraint is violated
+        lambda = A(2,2); %insightgotten from a ta
+        F_c = lambda * (dC2);
+        qdot = qdot + inv(A)*J.'*F_c;
+     end
+    
+    %th3
+    th3_min = pi/6; %constraint
+    th3_max = 5*pi/6;
+    C3_min = z(3) - th3_min; 
+    C3_max = th3_max - z(3);
+    dC3 = z(8);
+    
+    qdot = z(6:10);
+    
+    J = [0 0 1 0 0];
+    
+     if (C3_min < 0 && dC3 <0)% if constraint is violated
+        lambda = A(2,2); %insightgotten from a ta
+        F_c = lambda * (0 - dC3);
+        qdot = qdot + inv(A)*J.'*F_c;        % generalformulation of constraint
+    elseif (C3_max < 0 && dC3 > 0)% if constraint is violated
+        lambda = A(2,2); %insightgotten from a ta
+        F_c = lambda * (dC3);
+        qdot = qdot + inv(A)*J.'*F_c;
     end
 
 end
@@ -464,7 +609,7 @@ function animateSol(tspan, x,p)
     h_title = title('t=0.0s');
     
     axis equal
-    axis([-.5 .5 -.5 .5]);
+    axis([-.5 1 -.5 .5]);
 
     %Step through and update animation
     for i = 1:length(tspan)
@@ -503,4 +648,30 @@ function animateSol(tspan, x,p)
 
         pause(.03)
     end
+end
+
+% END Constraint Functions
+
+
+%% Find y0 function
+
+function y0 = find_y0(th1, th2, th3, l_OA, l_OB, l_AC, l_DE, l_EF)
+ihat = [0; -1; 0];
+jhat = [1; 0; 0];
+
+khat = cross(ihat,jhat);
+e1hat =  cos(th1)*ihat + sin(th1)*jhat;
+e2hat =  cos(th1+th2)*ihat + sin(th1+th2)*jhat;
+e3hat =  cos(th1+th2+th3)*ihat + sin(th1+th2+th3)*jhat;
+
+rO = 0;
+rA = rO + l_OA * e1hat;
+rB = rO + l_OB * e1hat;
+rC = rA  + l_AC * e2hat;
+rD = rB  + l_AC * e2hat;
+rE = rD  + l_DE * e1hat;
+rF = rE + l_EF * e3hat;
+
+y0 = -rF(2);
+
 end

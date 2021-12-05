@@ -131,7 +131,7 @@ J_b = jacobian(rB,q);
 J_c = jacobian(rC,q);
 J_d = jacobian(rD,q);
 J_e = jacobian(rE,q);
-J_f = jacobian(rF,q)
+J_f = jacobian(rF,q);
 
 % Compute ddt( J )
 dJ_a= reshape( ddt(J_a(:)) , size(J_a) );
@@ -171,6 +171,8 @@ J_e  = J_e(1:2,1:5);
 dJ_e = dJ_e(1:2,1:5);
 J_f  = J_f(1:2,1:5);
 dJ_f = dJ_f(1:2,1:5);
+
+directory = '../AutoDerived/';
 
 %Joint Mass Matrix and other usefuls
 matlabFunction(A,'file',['A_' name],'vars',{z p});
