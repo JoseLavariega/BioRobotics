@@ -52,13 +52,18 @@ function output_data = Experiment_Example_MATLAB()
     % The example program provided takes two arguments
     th1_init = -pi/4;      % angle 1 for starting squat position of leg
     th2_init = 5*pi/6;     % angle 2 for starting squat position of leg 
-    th1_d = -2*pi/3;       % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
-    th2_d = pi/6;          % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
-    K_p = 0.50;
-    K_d = 0.1;
-    K_i = 0.01;
-    input = [th1_init, th2_init, th1_d, th2_d, K_p, K_d, K_i];    % input sent to Nucleo board
-    output_size = 5;    % number of outputs expected
+%     th1_d = -2*pi/3;       % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
+%     th2_d = pi/6;          % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
+   
+    th1_d = 2*pi/3;
+    th2_d = pi/2;
+    K_p = 300;
+%     K_d = 0.1;
+%     K_i = 0.01;
+    K_d = 0;
+    K_i = 0;
+    input = [th1_d, th2_d, K_p, K_d, K_i];    % input sent to Nucleo board
+    output_size = 6;    % number of outputs expected
     
     output_data = RunExperiment(frdm_ip,frdm_port,input,output_size,params);
         
