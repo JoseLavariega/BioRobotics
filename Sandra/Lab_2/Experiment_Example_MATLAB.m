@@ -1,34 +1,28 @@
 function output_data = Experiment_Example_MATLAB()
     figure(1);  clf;       % Create an empty figure to update later
-    subplot(511)
+    subplot(411)
     h1 = plot([0],[0]);
     h1.XData = []; h1.YData = [];
-    ylabel('Position (rad)');
+    xlabel('Time (sec)');ylabel('Position (rad)');
     title('Position');
     
-    subplot(512)
+    subplot(412)
     h2 = plot([0],[0]);
     h2.XData = []; h2.YData = [];
-    ylabel('Velocity (rad/s)');
+    xlabel('Time (sec)'); ylabel('Velocity (rad/s)');
     title('Velocity');
     
-    subplot(513)
+    subplot(413)
     h3 = plot([0],[0]);
     h3.XData = []; h3.YData = [];
-    ylabel('Current (Amps)');
+    xlabel('Time (sec)'); ylabel('Current (Amps)');
     title('Current');
     
-    subplot(514)
+    subplot(414)
     h4 = plot([0],[0]);
     h4.XData = []; h4.YData = [];
-    ylabel('Voltage (Volts)');
-    title('Voltage');
-    
-    subplot(515)
-    h5 = plot([0],[0]);
-    h5.XData = []; h5.YData = [];
-    ylabel('Desired Currennt (Amps)');
-    title('Desired Current');
+    xlabel('Time (sec)'); ylabel('Voltage Input (V)');
+    title('Voltage Input');
     
     % This function will get called any time there is new data from
     % the Nucleo board. Data comes in blocks, rather than one at a time.
@@ -37,8 +31,7 @@ function output_data = Experiment_Example_MATLAB()
         pos = new_data(:,2); % position
         vel = new_data(:,3); % velocity
         curr = new_data(:,4); % current
-        volts = new_data(:,5); % voltage
-        curr_d = new_data(:,6); % desired current
+        volt = new_data(:,5); % voltage
         N = length(pos);
         
         h1.XData(end+1:end+N) = t;   % Update subplot 1
@@ -48,9 +41,7 @@ function output_data = Experiment_Example_MATLAB()
         h3.XData(end+1:end+N) = t;   % Update subplot 3
         h3.YData(end+1:end+N) = curr;
         h4.XData(end+1:end+N) = t;   % Update subplot 4
-        h4.YData(end+1:end+N) = volts;       
-        h5.XData(end+1:end+N) = t;   % Update subplot 5
-        h5.YData(end+1:end+N) = curr_d;        
+        h4.YData(end+1:end+N) = volt;
     end
     
     frdm_ip  = '192.168.1.100';     % Nucleo board ip
@@ -59,14 +50,22 @@ function output_data = Experiment_Example_MATLAB()
     params.timeout  = 2;            % end of experiment timeout
     
     % The example program provided takes two arguments
-    Kp = 22.0;
-    Ki = 1.0;
-    Desired_Current = 1.0;
-    R = 1.81;
-    Kb = 0.172;
-    input = [Kp Ki Desired_Current R Kb];    % input sent to Nucleo board
+    th1_init = -pi/4;      % angle 1 for starting squat position of leg
+    th2_init = 5*pi/6;     % angle 2 for starting squat position of leg 
+%     th1_d = -2*pi/3;       % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
+%     th2_d = pi/6;          % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
+   
+    th1_d = 2*pi/3;
+    th2_d = pi/2;
+    K_p = 300;
+%     K_d = 0.1;
+%     K_i = 0.01;
+    K_d = 0;
+    K_i = 0;
+    input = [th1_d, th2_d, K_p, K_d, K_i];    % input sent to Nucleo board
     output_size = 6;    % number of outputs expected
     
     output_data = RunExperiment(frdm_ip,frdm_port,input,output_size,params);
         
+    
 end
