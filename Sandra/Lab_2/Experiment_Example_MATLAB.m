@@ -50,19 +50,34 @@ function output_data = Experiment_Example_MATLAB()
     params.timeout  = 2;            % end of experiment timeout
     
     % The example program provided takes two arguments
+    
+    % Total experiment time is buffer,trajectory,buffer
+    traj_time         = 0.5;
+    pre_buffer_time   = 2; % this should be 0 for constant points, 2 for Bezier trajectories
+    post_buffer_time  = 2;
+    
     th1_init = -pi/4;      % angle 1 for starting squat position of leg
     th2_init = 5*pi/6;     % angle 2 for starting squat position of leg 
-%     th1_d = -2*pi/3;       % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
+%     th1_d = 2*pi/3;       % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
 %     th2_d = pi/6;          % angle 1 for desired angle of leg "jump/push-off" from ground (from simulation)
-   
-    th1_d = 2*pi/3;
-    th2_d = pi/2;
-    K_p = 300;
+    th1_d = 0;
+    th2_d = pi/4;
+
+    
+    % SQUAT GAINS
+    K_p_s = 7;
+%     K_d = 0.1;
+%     K_i = 0.01;
+    K_d_s = 0;
+    K_i_s = 0;
+    
+    % JUMP GAINS
+    K_p = 150;
 %     K_d = 0.1;
 %     K_i = 0.01;
     K_d = 0;
     K_i = 0;
-    input = [th1_d, th2_d, K_p, K_d, K_i];    % input sent to Nucleo board
+    input = [traj_time, pre_buffer_time, post_buffer_time, th1_init, th2_init, th1_d, th2_d, K_p_s, K_d_s, K_i_s, K_p, K_p, K_d, K_i];    % input sent to Nucleo board
     output_size = 6;    % number of outputs expected
     
     output_data = RunExperiment(frdm_ip,frdm_port,input,output_size,params);
