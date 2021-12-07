@@ -2,7 +2,7 @@ function simulate_leg_4links()
     %% Definte fixed paramters
     %setpath
     m0 = 0.2;
-    m1 =.220 + .4;         m2 =.0368; 
+    m1 =.220 + .1;         m2 =.0368; 
     m3 = .00783;            m4 = .02272;
     I1 = 25.1 * 10^-6;      I2 = 53.5 * 10^-6;
     I3 = 9.25 * 10^-6;      I4 = 22.176 * 10^-6;
@@ -29,11 +29,11 @@ function simulate_leg_4links()
     flying = 0;
     
     % MODIFIED PARAMETERS 
-    kappa = [0.0365 0.5 0.75 0.2 0.9 0.8 1.0];         % to be determined. Amount of rubber bands
-    squat_th1 = [-pi/4 -pi/2];         % TBD. squat(starting) angle The index is the configuration to be used. 
-    squat_th2 = [5*pi/6 4*pi/6];        % TBD. Squat(starting) angle
-    jump_th1  = [-2*pi/3 -pi/3];       % TBD. Impulse Angle
-    jump_th2  = [pi/6 pi/6];           % TBD. Impulse Angle
+    kappa = [0.00667 0.02 0.04 0.006 0.01166 0.04 0.0044 0.010769 0.02667];         % to be determined. Amount of rubber bands
+    squat_th1 = linspace(-pi/4,pi/2,50);         % TBD. squat(starting) angle The index is the configuration to be used. 
+    squat_th2 = linspace(pi/6,5*pi/6,50);        % TBD. Squat(starting) angle
+    jump_th1  = [-2.8*pi/10];       % TBD. Impulse Angle
+    jump_th2  = [pi/8];           % TBD. Impulse Angle
     
     %Want to find,stiffness,angle that maximizes horizontal forward
     %distance traveled out of a single hop.
@@ -41,7 +41,7 @@ function simulate_leg_4links()
     %Initial Conditions
     th1_0 = 0;
     th2_0 = pi/2;
-    th3_0 = pi/6; % to be determined
+    th3_0 = -pi/6; % to be determined
     x_0   = 0;
     y_0   = find_y0(th1_0, th2_0, th3_0, l_OA, l_OB, l_AC, l_DE, l_EF) + y_offset;
     %TODO: Print y_offset
@@ -56,28 +56,37 @@ function simulate_leg_4links()
     
     
     current_index = 1;
-    distances_traveled = [0];
     
-    for sel=1:length(kappa) %put here your independent variable
+    distances_storage  = cell(length(kappa),1);
+    %distances_traveled = zeros(length(squat_th1),length(squat_th2));
+  
+  for kappa_sel=1:length(kappa)
+      
+      distances_traveled = zeros(length(squat_th1),length(squat_th2));
+   for th_1=1:length(squat_th1)
+    for th_2=1:length(squat_th2) %put here your independent variable
     %% Perform Dynamic simulation
         %% Parameter vector
-        p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa(sel) th3_0]';
+        p   = [m1 m2 m3 m4 m5 I1 I2 I3 I4 I5 Ir N l_O_m1 l_B_m2 l_A_m3 l_C_m4 l_E_m5 l_OA l_OB l_AC l_DE l_EF g kappa(kappa_sel) th3_0]';
         %In the line above, modify kappa to kappa(sel)as needed
     
     
         dt = 0.001;
-        tf = 2;
+        tf = 1.8;
         num_step = floor(tf/dt);
         tspan = linspace(0, tf, num_step);
 
         z0 = [th1_0; th2_0; th3_0; x_0; y_0; ...
-            0;        0;      0;  0;   0];
+               0;        0;      0;  0;   0];
 
         z_out = zeros(10,num_step);
         z_out(:,1) = z0;
+        last_valid_index =1;
 
         for i=1:num_step-1
-            dz = dynamics(tspan(i), z_out(:,i), p, p_traj, squat_th1(1), squat_th2(1),jump_th1(1),jump_th2(1)); 
+            
+            
+            dz = dynamics(tspan(i), z_out(:,i), p, p_traj, squat_th1(th_1), squat_th2(th_2),jump_th1(1),jump_th2(1)); 
             %cCHANGETHE PARAMETERS ABOVE AS NEEDED
             
             % Velocity update with dynamics
@@ -88,11 +97,40 @@ function simulate_leg_4links()
 
             % Position update
             z_out(1:5,i+1) = z_out(1:5,i) + z_out(6:10,i+1)*dt;
+            
+            
+            if(isnan(z_out(4,i)))
+                disp(z_out(4,i))
+                break;
+                
+            elseif(z_out(4,i)>3)
+                    break;
+            end
+            
+            last_valid_index = i;
+            
+           
         end
-        z_out(1:10, end)
-        distances_traveled(sel) = z_out(4,end);
+        z_out(1:10, last_valid_index)
+        distances_traveled(th_1,th_2) = z_out(4,last_valid_index);
     
     end
+    
+   end
+   
+   for i=1:length(squat_th1)
+       for j=1:length(squat_th2)
+           if(distances_traveled(i,j) > 1.1 || distances_traveled(i,j)<-1.1)
+               distances_traveled(i,j) = 0;
+           end
+       end
+   end
+   
+   distances_traveled
+   kappa_sel
+   distances_storage{kappa_sel} = distances_traveled;
+   
+  end
     
     %% Compute Energy
     E = energy_leg(z_out,p);
@@ -145,27 +183,111 @@ function simulate_leg_4links()
     
     
     %% Animate Solution
-    figure(7); clf;
-    hold on
-   
-  
-    % Target traj
-    TH = 0:.1:2*pi;
-    plot( p_traj.x_0 + p_traj.r * cos(TH), ...
-          p_traj.y_0 + p_traj.r * sin(TH),'k--'); 
-    
-    % Ground Q2.3
-    plot([-.2 .2],[ground_height ground_height],'k'); 
-    
-    animateSol(tspan, z_out,p);
+%     figure(7); clf;
+%     hold on
+%    
+%   
+%     % Target traj
+%     TH = 0:.1:2*pi;
+%     plot( p_traj.x_0 + p_traj.r * cos(TH), ...
+%           p_traj.y_0 + p_traj.r * sin(TH),'k--'); 
+%     
+%     % Ground Q2.3
+%     plot([-.2 .2],[ground_height ground_height],'k'); 
+%     
+%     animateSol(tspan, z_out,p);
     %%
     
     % Independent Variable Code
-    figure(8); clf;
-    hold on
-    scatter(kappa, distances_traveled); %change to values iterated on
-    xlabel('Independent Variable (kappa, thetas_bend, or thetas_launch');
-    ylabel('Horizontal Distance Traveled (Origin)')
+    %figure(8); 
+    %clf;
+%     hold on
+%     scatter(kappa, distances_traveled,'filled' ); %change to values iterated on
+%     xlabel('Independent Variable (kappa, thetas_bend, or thetas_launch');
+%     ylabel('Horizontal Distance Traveled (Origin)')
+
+    %hold on
+    
+    figure(8); 
+    clf;
+    distances_traveled = distances_storage{1};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(9); 
+    clf;
+    distances_traveled = distances_storage{2};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(10); 
+    clf;
+    distances_traveled = distances_storage{3};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(11); 
+    clf;
+    distances_traveled = distances_storage{4};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(12); 
+    clf;
+    distances_traveled = distances_storage{5};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(13); 
+    clf;
+    distances_traveled = distances_storage{6};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(14); 
+    clf;
+    distances_traveled = distances_storage{7};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(15); 
+    clf;
+    distances_traveled = distances_storage{8};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+    figure(16); 
+    clf;
+    distances_traveled = distances_storage{9};
+    surf(squat_th1, squat_th2, distances_traveled);
+    xlabel('theta 1 (rad)');
+    ylabel('theta 2 (rad)');
+    zlabel('distance traveled (m)');
+    
+   
+    
+    
+    distances_traveled
+    %distances_traveled(5,5)
+    
+    %length(squat_th1)
+    %length(squat_th2)
 end
 
 % function tau = control_law(t,z,p,p_traj)
@@ -183,7 +305,7 @@ function tau = control_law(t, z, squat_th1, squat_th2,jump_th1,jump_th2)
 
     t_start = 0.5;
     t_jump  = 1.0;
-    t_land  = 2.0;
+    t_land  = 2.5;
     
     max_length = 0.3;
     global flying;
@@ -285,8 +407,8 @@ function tau = control_law(t, z, squat_th1, squat_th2,jump_th1,jump_th2)
         D_1 = 1;
         D_2 = 1;
         
-        th1_d = pi/3;
-        th2_d = pi/6;
+        th1_d = jump_th1;
+        th2_d = jump_th2;
     elseif(flying == 2)
         "trying to land";
         K_1 = 12.5;
