@@ -2,7 +2,7 @@ function simulate_leg_4links()
     %% Definte fixed paramters
     %setpath
     m0 = 0.2;
-    m1 =.220 + .1;         m2 =.0368; 
+    m1 =.220 + .2;         m2 =.0368; 
     m3 = .00783;            m4 = .02272;
     I1 = 25.1 * 10^-6;      I2 = 53.5 * 10^-6;
     I3 = 9.25 * 10^-6;      I4 = 22.176 * 10^-6;
@@ -29,9 +29,13 @@ function simulate_leg_4links()
     flying = 0;
     
     % MODIFIED PARAMETERS 
-    kappa = [0.00667 0.02 0.04 0.006 0.01166 0.04 0.0044 0.010769 0.02667];         % to be determined. Amount of rubber bands
-    squat_th1 = linspace(-pi/4,pi/2,50);         % TBD. squat(starting) angle The index is the configuration to be used. 
-    squat_th2 = linspace(pi/6,5*pi/6,50);        % TBD. Squat(starting) angle
+%     kappa = [0.01334 0.04 0.08 0.012 0.02332 0.08 0.0088 0.0214 0.05267];         % to be determined. Amount of rubber bands
+%     squat_th1 = linspace(-pi/4,pi/2,25);         % TBD. squat(starting) angle The index is the configuration to be used. 
+%     squat_th2 = linspace(pi/6,5*pi/6,25);        % TBD. Squat(starting) angle
+    kappa = [0.052];
+    squat_th1 = [-0.75];
+    squat_th2 =  [2];
+    
     jump_th1  = [-2.8*pi/10];       % TBD. Impulse Angle
     jump_th2  = [pi/8];           % TBD. Impulse Angle
     
@@ -62,6 +66,8 @@ function simulate_leg_4links()
   
   for kappa_sel=1:length(kappa)
       
+      kappa_sel
+      
       distances_traveled = zeros(length(squat_th1),length(squat_th2));
    for th_1=1:length(squat_th1)
     for th_2=1:length(squat_th2) %put here your independent variable
@@ -72,7 +78,7 @@ function simulate_leg_4links()
     
     
         dt = 0.001;
-        tf = 1.8;
+        tf = 2;
         num_step = floor(tf/dt);
         tspan = linspace(0, tf, num_step);
 
@@ -99,6 +105,15 @@ function simulate_leg_4links()
             z_out(1:5,i+1) = z_out(1:5,i) + z_out(6:10,i+1)*dt;
             
             
+            if(i>(num_step)/2)
+                foot_position = position_foot_rF(z_out(:,i),p);
+                if(foot_position <= 0) %first contact with the ground
+                   break; 
+                end
+                
+            end
+            
+            
             if(isnan(z_out(4,i)))
                 disp(z_out(4,i))
                 break;
@@ -107,11 +122,14 @@ function simulate_leg_4links()
                     break;
             end
             
-            last_valid_index = i;
+             last_valid_index = i;
             
            
         end
+        %z_out(1:10, end)
+        %distances_traveled(th_1, th_2) % to edit TO EDIT TO EDIT
         z_out(1:10, last_valid_index)
+        kappa_sel
         distances_traveled(th_1,th_2) = z_out(4,last_valid_index);
     
     end
@@ -120,14 +138,14 @@ function simulate_leg_4links()
    
    for i=1:length(squat_th1)
        for j=1:length(squat_th2)
-           if(distances_traveled(i,j) > 1.1 || distances_traveled(i,j)<-1.1)
-               distances_traveled(i,j) = 0;
+           if(distances_traveled(i,j) > 1.5 || distances_traveled(i,j)<-1.5)
+               distances_traveled(i,j) = 0;  % assume singularity
            end
        end
    end
    
-   distances_traveled
-   kappa_sel
+   %distances_traveled
+   %kappa_sel
    distances_storage{kappa_sel} = distances_traveled;
    
   end
@@ -183,19 +201,19 @@ function simulate_leg_4links()
     
     
     %% Animate Solution
-%     figure(7); clf;
-%     hold on
-%    
-%   
-%     % Target traj
-%     TH = 0:.1:2*pi;
-%     plot( p_traj.x_0 + p_traj.r * cos(TH), ...
-%           p_traj.y_0 + p_traj.r * sin(TH),'k--'); 
-%     
-%     % Ground Q2.3
-%     plot([-.2 .2],[ground_height ground_height],'k'); 
-%     
-%     animateSol(tspan, z_out,p);
+    figure(7); clf;
+    hold on
+   
+  
+    % Target traj
+    TH = 0:.1:2*pi;
+    plot( p_traj.x_0 + p_traj.r * cos(TH), ...
+          p_traj.y_0 + p_traj.r * sin(TH),'k--'); 
+    
+    % Ground Q2.3
+    plot([-.2 .2],[ground_height ground_height],'k'); 
+    
+    animateSol(tspan, z_out,p);
     %%
     
     % Independent Variable Code
@@ -208,77 +226,77 @@ function simulate_leg_4links()
 
     %hold on
     
-    figure(8); 
-    clf;
-    distances_traveled = distances_storage{1};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(9); 
-    clf;
-    distances_traveled = distances_storage{2};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(10); 
-    clf;
-    distances_traveled = distances_storage{3};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(11); 
-    clf;
-    distances_traveled = distances_storage{4};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(12); 
-    clf;
-    distances_traveled = distances_storage{5};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(13); 
-    clf;
-    distances_traveled = distances_storage{6};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(14); 
-    clf;
-    distances_traveled = distances_storage{7};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(15); 
-    clf;
-    distances_traveled = distances_storage{8};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
-    
-    figure(16); 
-    clf;
-    distances_traveled = distances_storage{9};
-    surf(squat_th1, squat_th2, distances_traveled);
-    xlabel('theta 1 (rad)');
-    ylabel('theta 2 (rad)');
-    zlabel('distance traveled (m)');
+%     figure(8); 
+%     clf;
+%     distances_traveled = distances_storage{1};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(9); 
+%     clf;
+%     distances_traveled = distances_storage{2};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(10); 
+%     clf;
+%     distances_traveled = distances_storage{3};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(11); 
+%     clf;
+%     distances_traveled = distances_storage{4};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(12); 
+%     clf;
+%     distances_traveled = distances_storage{5};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(13); 
+%     clf;
+%     distances_traveled = distances_storage{6};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(14); 
+%     clf;
+%     distances_traveled = distances_storage{7};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(15); 
+%     clf;
+%     distances_traveled = distances_storage{8};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
+%     
+%     figure(16); 
+%     clf;
+%     distances_traveled = distances_storage{9};
+%     surf(squat_th1, squat_th2, distances_traveled);
+%     xlabel('theta 1 (rad)');
+%     ylabel('theta 2 (rad)');
+%     zlabel('distance traveled (m)');
     
    
     
@@ -656,42 +674,42 @@ function qdot = joint_limit_constraint(z,p)
     C1_min = z(1) - th1_min; 
     C1_max = th1_max - z(1);
     dC1 = z(6);
-    qdot = z(6:10);
+    qdot_temp = z(6:10);
     
     J = [1 0 0 0 0];
     A = A_leg(z,p);
 
     if (C1_min < 0 && dC1 <0)% if constraint is violated
         test_print = "min angle violated"
-        lambda = A(2,2); %insightgotten from a ta
+        lambda = A(1,1); %insightgotten from a ta
         F_c = lambda * (0 - dC1);
         inv(A);
-        qdot = qdot + inv(A)*J.'*F_c;        % generalformulation of constraint
+        qdot_temp = qdot_temp + inv(A)*J.'*F_c;        % generalformulation of constraint
     elseif (C1_max < 0 && dC1 > 0)% if constraint is violated
-        lambda = A(2,2); %insightgotten from a ta
-        F_c = lambda * (dC1);
-        qdot = qdot + inv(A)*J.'*F_c;
+        lambda = A(1,1); %insightgotten from a ta
+        F_c = lambda * (0- dC1);
+        qdot_temp = qdot_temp + inv(A)*J.'*F_c;
     end
     
     %th2
     J = [0 1 0 0 0];
     
-    th2_min = pi/6; %constraint
+    th2_min = -pi/6; %constraint
     th2_max = 5*pi/6;
     C2_min = z(2) - th2_min; 
     C2_max = th2_max - z(2);
     dC2 = z(7);
     
-    qdot = z(6:10);
+    %qdot = z(6:10);
     
      if (C2_min < 0 && dC2 <0)% if constraint is violated
         lambda = A(2,2); %insightgotten from a ta
         F_c = lambda * (0 - dC2);
-        qdot = qdot + inv(A)*J.'*F_c;        % generalformulation of constraint
+        qdot_temp = qdot_temp + inv(A)*J.'*F_c;        % generalformulation of constraint
     elseif (C2_max < 0 && dC2 > 0)% if constraint is violated
         lambda = A(2,2); %insightgotten from a ta
-        F_c = lambda * (dC2);
-        qdot = qdot + inv(A)*J.'*F_c;
+        F_c = lambda * (0- dC2);
+        qdot_temp = qdot_temp + inv(A)*J.'*F_c;
      end
     
     %th3
@@ -701,19 +719,21 @@ function qdot = joint_limit_constraint(z,p)
     C3_max = th3_max - z(3);
     dC3 = z(8);
     
-    qdot = z(6:10);
+    %qdot = z(6:10);
     
     J = [0 0 1 0 0];
     
      if (C3_min < 0 && dC3 <0)% if constraint is violated
-        lambda = A(2,2); %insightgotten from a ta
+        lambda = A(3,3); %insightgotten from a ta
         F_c = lambda * (0 - dC3);
-        qdot = qdot + inv(A)*J.'*F_c;        % generalformulation of constraint
-    elseif (C3_max < 0 && dC3 > 0)% if constraint is violated
-        lambda = A(2,2); %insightgotten from a ta
-        F_c = lambda * (dC3);
-        qdot = qdot + inv(A)*J.'*F_c;
-    end
+        qdot_temp = qdot_temp + inv(A)*J.'*F_c;        % generalformulation of constraint
+%     elseif (C3_max < 0 && dC3 > 0)% if constraint is violated
+%         lambda = A(2,2); %insightgotten from a ta
+%         F_c = lambda * (0- dC3);
+%         qdot = qdot + inv(A)*J.'*F_c;
+     end
+    
+     qdot = qdot_temp;
 
 end
 
